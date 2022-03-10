@@ -20,9 +20,9 @@ localcalc = GPAW(mode='lcao',
             )
 
 
-def remove_atoms(system, atomIndex, atomRemoveIndex, relax = True, overwriteCalc = True):
+def remove_atoms(system, atomIndex = [], atomRemoveIndex, relax = True, overwriteCalc = True):
     """
-    Function to remove a list of atoms, or single atom. If relax = True as per default, the system will relax using its calculator afterthe atoms have been removed.
+    Function to remove a list of atoms, or single atom. If relax = True as per default, the system will relax using its calculator after the atoms have been removed.
     
     Input:
      - system: Atoms system (ase)
