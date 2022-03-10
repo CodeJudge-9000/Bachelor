@@ -1,10 +1,23 @@
 
+# Initialization
+from FingerPrints import *
+import numpy as np
+from math import sqrt
+from random import randrange
+
+# 2D distance function
+def 2D_Dist(pos1, pos2):
+    d1 = pos1[0] - pos2[0] # The x-axis
+    d2 = pos1[1] - pos2[1] # The y-axis
+    return sqrt(d1**2 + d2**2)
+
 
 class KMC:
-    def __init__(self, system, TDlib):
+    def __init__(self, system, TDlib, fingerPrint):
         self.system = system
         self.TDlib = TDlib
-        self.missingTDs = np.array([]) # Add the missing fingerprints to this list
+        self.fingerPrint = fingerPrint # Name of the fingerPrint used
+        self.missingTDs = [] # Add the missing fingerprints to this list
     
     def run(n):
         """
@@ -42,22 +55,53 @@ class KMC:
         """
         Dummy-function to imitate calculating the interaction cross-section of an atom.
         """
+        if system[index].symbol = "S":
+            return 1
+        else:
+            return 1.5
     
     def determine_hit():
         """
         Determines where an electron enters the structures, and determines whether it'll intersect any cross-section for an atom. It then returns the ID of this atom if True, otherwise it returns False.
         """
+        # Get cell dimensions
+        cell = self.system.get_cell() # get_cell returns the lengths of the cell, as 3 vectors stretching out from the point (0, 0, 0)
+        xLen = cell[0][0]
+        yLen = cell[1][1]
         
-    def get_TD():
+        # Choose a random point (x, y) within the cell
+        x = randrange(0, xLen) # TODO
+        y = randrange(0, yLen) # TODO
+        
+        # Get the center of mass' third coordinates
+        comZ = system.get_center_of_mass()[2]
+        
+        # Check for all atoms below the center of mass if any cross-sections are intersected
+        [atom.index for atom in system if atom.position[2] < comZ and 2D_Dist(atom.position, )] # TODO
+        
+        
+    def get_TD(index):
         """
-        Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this and return False.
+        Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
-        ### TEMPORARILY A VIRTUAL FUNCTION ###
-        raise NotImplementedError()
+        # First get the fingerprint for the corresponding atom id
+        finger_method = getattr(FingerPrints, fingerPrint)
+        finger = finger_method(index)
+        
+        # Now run through the pandas dataframe, and check if there are any corresponding value
+        if len(self.TDlib[self.TDlib["finger"] == finger]) == 0:
+            # If there are none, add the fingerPrint to missingTDs and return True
+            self.missingTDs.append(finger)
+            return False
+        
+        # If there are at least one corresponding TD value, take the average of all the values and return the value
+        else:
+            return self.TDlib[self.TDlib["finger"] == finger].mean()["Td"]
+    
     
     def get_missing_TDs():
         """
-        Returns all the fingerprints with missing TD values.
+        Returns a list of all the fingerprints missing a TD value.
         """
         return self.missingTDs
     
