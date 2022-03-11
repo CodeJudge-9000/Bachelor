@@ -125,14 +125,14 @@ def CommonFinger(system, index):
 
 def ShortCommonFinger(system, index):
     """
-    Fingerprint in format (aoi(Mo), Mo1(S) and aoi(S), Mo2(S) and aoi(S), ...). If there are no Mo2 or Mo3, then the number of neighboring S will be set to 0.
+    Fingerprint in format (aoi(Mo), aoi(S), Mo1(S) and aoi(S), Mo2(S) and aoi(S), ...). If there are no Mo2 or Mo3, then the number of neighboring S will be set to 0.
     
     Input:
      - system: Atoms ase system
      - index: which atom to calculate fingerprint for
      
     Output:
-     - fingerprint: (aoi(Mo), Mo1(S) and aoi(S), Mo2(S) and aoi(S), ...)
+     - fingerprint: (aoi(Mo), aoi(S), Mo1(S) and aoi(S), Mo2(S) and aoi(S), ...)
     """
     fingerPrint = []
     
@@ -140,6 +140,9 @@ def ShortCommonFinger(system, index):
     MOs = NNs_Sphere(system, index, atom_type = "Mo")
     nMo = MOs[0]
     fingerPrint.append(nMo)
+    
+    # Add the amount of S NNs for our aoi atom to the fingerprint
+    fingerPrint.append(NNs_Sphere(system, index, atom_type = "S")[0])
     
     # Find the aoi(S) neighbor ids
     aoiNeighbors = np.array([p["index"] for p in NNs_Sphere(system, index, atom_type = "S")[2]])
@@ -181,11 +184,11 @@ def LongCommonFinger(system, index):
     nMo = MOs[0]
     fingerPrint.append(nMo)
     
-    # Find the aoi(S) neighbor ids
-    aoiNeighbors = np.array([p["index"] for p in NNs_Sphere(system, index, atom_type = "S")[2]])
-    
     # Add the amount of S NNs for our aoi atom to the fingerprint
     fingerPrint.append(NNs_Sphere(system, index, atom_type = "S")[0])
+    
+    # Find the aoi(S) neighbor ids
+    aoiNeighbors = np.array([p["index"] for p in NNs_Sphere(system, index, atom_type = "S")[2]])
     
     # Now, for each Mo atom, find the amount of S atoms that overlap with the aoi S neighbors and add to the fingerprint
     for e in MOs[2]:

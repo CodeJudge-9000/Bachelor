@@ -1,10 +1,11 @@
 
 # Initialization
-from FingerPrints import *
+import FingerPrints
 from atomic_annihilator import *
 import numpy as np
 from math import sqrt
-from random import randrange
+from random import uniform
+from copy import copy
 
 # 2D distance function
 def Dist_2D(pos1, pos2):
@@ -29,13 +30,12 @@ class KMC:
         """
         Simulates n electrons, and return True or False depending on whether any TD values were missing. If no TD value was missing, return True, otherwise return False.
         """
-        tF = True
-        for i in range(n):
-            simBool = self.simulate_electron()
-            if simBool == False:
-                tF = False
         
-        return tF
+        tempmissingTDs = copy(self.missingTDs)
+        for i in range(n):
+            self.simulate_electron()
+        
+        return tempmissingTDs == self.missingTDs
         
     
     def simulate_electron(self):
@@ -79,22 +79,23 @@ class KMC:
         
         # If this exceeds the TD value for the atom, remove it (use the atomRemover function as to remove a list easily, and possibly keep track of indices in the future)
         if  TD <= energyTransfer:
+            print("Removed one")
             remove_atoms(self.system, atomRemoveIndex = lowestIndex, relax = False, overwriteCalc = True)
         
-        return
+        return True
     
     def cross_section(self):
         ### TEMPORARILY A VIRTUAL FUNCTION ###
         raise NotImplementedError()
         
-    def cross_dummy(self, index):
+    def cross_dummy(self, symbol):
         """
         Dummy-function to imitate calculating the interaction cross-section of an atom.
         """
-        if self.system[index].symbol = "S":
-            return 1
+        if symbol == "S":
+            return 2
         else:
-            return 1.5
+            return 5
     
     def energy_transferred(self):
         ### TEMPORARILY A VIRTUAL FUNCTION ###
@@ -120,16 +121,17 @@ class KMC:
         yLen = cell[1][1]
         
         # Choose a random point (x, y) within the cell
-        x = randrange(0, xLen) # TODO
-        y = randrange(0, yLen) # TODO
+        x = uniform(0, xLen) # TODO
+        y = uniform(0, yLen) # TODO
         point = (x, y)
         
         # Get the center of mass' third coordinates
-        comZ = system.get_center_of_mass()[2]
+        comZ = self.system.get_center_of_mass()[2]
         
-        # Check for all atoms below the center of mass if any cross-sections are intersected
+        # Check for all atoms (that are S) below the center of mass if any cross-sections are intersected
         interSect = [(atom.index, Dist_2D(atom.position, point))
-                       for atom in system if atom.position[2] < comZ
+                       for atom in self.system if atom.position[2] < comZ
+                       and atom.symbol == "S"
                        and Dist_2D(atom.position, point) <= self.cross_dummy(atom.symbol)] # REPLACE cross_dummy() WITH cross_section() WHEN POSSIBLE
         # If no intercepts were found, return false
         if len(interSect) == 0:
@@ -144,18 +146,24 @@ class KMC:
         Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
         # First get the fingerprint for the corresponding atom id
-        finger_method = getattr(FingerPrints, fingerPrint)
-        finger = finger_method(index)
+        finger_method = getattr(FingerPrints, self.fingerPrint)
+        finger = finger_method(self.system, index)
+        
+        ### BUGTESTING ###
+        if finger[0] == 4 or finger[0] == 6:
+            print(index, finger)
+        ### BUGTESTING ###
         
         # Now run through the pandas dataframe, and check if there are any corresponding value
-        if len(self.TDlib[self.TDlib["finger"] == finger]) == 0:
-            # If there are none, add the fingerPrint to missingTDs and return True
-            self.missingTDs.append(finger)
+        if len(self.TDlib[self.TDlib["finger"] == str(finger)]) == 0:
+            # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
+            if finger not in self.missingTDs:
+                self.missingTDs.append(finger)
             return False
         
         # If there are at least one corresponding TD value, take the average of all the values and return the value
         else:
-            return self.TDlib[self.TDlib["finger"] == finger].mean()["Td"]
+            return self.TDlib[self.TDlib["finger"] == str(finger)].mean()["Td"]
     
     
     def get_missing_TDs(self):
@@ -164,4 +172,7 @@ class KMC:
         """
         return self.missingTDs
     
-    
+    def clear_missing_TDs(self):
+        "Clears the missing TD list."
+        self.missingTDs = []
+        return
