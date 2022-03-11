@@ -16,14 +16,14 @@ from Nearest_Neighbors import *
 
 def SimpleFinger(system, index):
     """
-    Fingerprint in format (Sum(Mo), Sum(S at Mo1), Sum(S at Mo2), Sum(S at Mo3)). If there are no Mo2 or Mo3, then the number of neighboring S will be set to 0.
+    Fingerprint in format (Sum(Mo), Sum(S at Mo1), Sum(S at Mo2), Sum(S at Mo3), sum(S at Mo4)). If there are no Mo2, Mo3 or Mo4, then the number of neighboring S will be set to 0.
     
     Input:
      - system: Atoms ase system
      - index: which atom to calculate fingerprint for
      
     Output:
-     - fingerprint: (aoi(Mo), Mo1(S), Mo2(S), Mo3(S))
+     - fingerprint: (aoi(Mo), Mo1(S), Mo2(S), Mo3(S), Mo4(S))
     """
     fingerPrint = []
     
@@ -37,8 +37,8 @@ def SimpleFinger(system, index):
         toAppend = NNs_Sphere(system, e["index"], atom_type = "S")[0] - 1
         fingerPrint.append(toAppend)
     
-    # If there are less than 3 Mo atoms, add '0' to the fingerprint for each missing atom
-    while(nMo < 3):
+    # If there are less than 4 Mo atoms, add '0' to the fingerprint for each missing atom
+    while(nMo < 4):
         fingerPrint.append(0)
         nMo += 1
     
@@ -69,8 +69,8 @@ def LessSimpleFinger(system, index):
         toAppend = NNs_Sphere(system, e["index"], atom_type = "S")[0] - 1
         fingerPrint.append(toAppend)
     
-    # If there are less than 3 Mo atoms, add '0' to the fingerprint for each missing atom
-    while(nMo < 3):
+    # If there are less than 4 Mo atoms, add '0' to the fingerprint for each missing atom
+    while(nMo < 4):
         fingerPrint.append(0)
         nMo += 1
     
@@ -114,8 +114,8 @@ def CommonFinger(system, index):
         fingerPrint.append(nCommon)
         fingerPrint.append(nNotCommon)
     
-    # If there are less than 3 Mo atoms, add '0' twice to the fingerprint for each missing atom
-    while(nMo < 3):
+    # If there are less than 4 Mo atoms, add '0' twice to the fingerprint for each missing atom
+    while(nMo < 4):
         fingerPrint.append(0)
         fingerPrint.append(0)
         nMo += 1
@@ -155,8 +155,8 @@ def ShortCommonFinger(system, index):
         # Now add this to the fingerprint
         fingerPrint.append(nCommon)
     
-    # If there are less than 3 Mo atoms, add '0' to the fingerprint for each missing atom
-    while(nMo < 3):
+    # If there are less than 4 Mo atoms, add '0' to the fingerprint for each missing atom
+    while(nMo < 4):
         fingerPrint.append(0)
         nMo += 1
     
@@ -200,8 +200,8 @@ def LongCommonFinger(system, index):
         fingerPrint.append(nCommon)
         fingerPrint.append(nNotCommon)
     
-    # If there are less than 3 Mo atoms, add '0' twice to the fingerprint for each missing atom
-    while(nMo < 3):
+    # If there are less than 4 Mo atoms, add '0' twice to the fingerprint for each missing atom
+    while(nMo < 4):
         fingerPrint.append(0)
         fingerPrint.append(0)
         nMo += 1
