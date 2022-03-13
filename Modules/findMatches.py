@@ -57,3 +57,27 @@ def find_finger_print_match_short_common(index, struct, removalList):
     correspondingList = RemovalLists[position]
     
     return correspondingList
+
+def search_for_case_simple(theList, sysString):
+    struct = read(sysString)
+    i = 0
+    while True:
+        try:
+            firstFoundList = find_finger_print_match_simple(i, struct, theList)
+            assert struct[i].symbol == 'S'
+            break
+        except:
+            i += 1
+    return i, firstFoundList
+
+def search_for_case_short_common(theList, sysString):
+    struct = read(sysString)
+    i = 0
+    while True:
+        try:
+            firstFoundList = find_finger_print_match_short_common(i, struct, theList)
+            assert struct[i].symbol == 'S'
+            break
+        except:
+            i += 1
+    return i, firstFoundList
