@@ -13,7 +13,7 @@ def find_finger_print_match_simple(index, struct, removalList):
     fingerList = []
     for rem in RemovalLists:
         copySys = struct.copy()
-        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False)
+        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False, overwriteCalc = False)
         fingerList.append(SimpleFinger(system = copySys, index = atomIndex))
     ## Check whitch situation corresponds
 
@@ -41,7 +41,7 @@ def find_finger_print_match_short_common(index, struct, removalList):
     fingerList = []
     for rem in RemovalLists:
         copySys = struct.copy()
-        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False)
+        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False, overwriteCalc = False)
         fingerList.append(ShortCommonFinger(system = copySys, index = atomIndex))
     
     ## Check whitch situation corresponds
