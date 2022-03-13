@@ -162,7 +162,7 @@ def get_removed_indeces(sys, theIndex):
 
 def make_list_of_lists(indexList):
     listOfLists = []
-    for i in range(1,len(indexList)):
+    for i in range(1,len(indexList)+1):
         useList = indexList.copy()
         listOfLists.append(useList[0:i])
     return listOfLists
