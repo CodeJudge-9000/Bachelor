@@ -49,7 +49,8 @@ def make_data_point(theIndex, givensystemString,theRadius):
 
     allNNIndexes = get_removed_indeces(sys = copySys, theIndex = theIndex)
     # Randomize
-    random.shuffle(allNNIndexes)
+    #random.shuffle(allNNIndexes)
+    # Nope not right now at least
 
     # Make list of lists
     RemovalLists = make_list_of_lists(allNNIndexes)
