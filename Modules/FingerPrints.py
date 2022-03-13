@@ -42,6 +42,12 @@ def SimpleFinger(system, index):
         fingerPrint.append(0)
         nMo += 1
     
+    # Getting rid of degenerate situations
+    first = fingerPrint[0:1]
+    rest = fingerPrint[1:5]
+    rest.sort(reverse=True)
+    fingerPrint = first + rest    
+    
     return fingerPrint
 
 
@@ -162,6 +168,12 @@ def ShortCommonFinger(system, index):
     while(nMo < 4):
         fingerPrint.append(0)
         nMo += 1
+    
+    # Getting rid of degenerate situations
+    first = fingerPrint[0:1]
+    rest = fingerPrint[1:5]
+    rest.sort(reverse=True)
+    fingerPrint = first + rest
     
     return fingerPrint
 
