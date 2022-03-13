@@ -1,6 +1,7 @@
 from FingerPrints import *
 from atomic_annihilator import remove_atoms
 from Nearest_Neighbors import *
+from ase.io import read
 
 def find_finger_print_match_simple(index, struct, removalList):
     
