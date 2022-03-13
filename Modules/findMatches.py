@@ -82,3 +82,14 @@ def search_for_case_short_common(theList, sysString):
         except:
             i += 1
     return i, firstFoundList
+
+
+def get_all_requests(searchList, sysString):
+    elementList = []
+    for i in range(0,len(searchList)):
+        theElement = searchList[i]
+        index, RemovList = search_for_case_simple(theElement, sysString)
+        element = [index, RemovList]
+        elementList.append(element)
+        
+    return elementList
