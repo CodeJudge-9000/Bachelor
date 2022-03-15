@@ -168,3 +168,22 @@ def make_list_of_lists(indexList):
     return listOfLists
 
 
+
+def get_all_combs_3(system, index):
+    ids = get_removed_indeces(system, index)
+    
+    # make all possible combinations
+    listOfLists = list()
+    for i in ids:
+        for j in ids:
+            for k in ids:
+                if(i!=j and i!=k and j!=k):
+                    listen = [i,j,k]
+                    listen.sort()
+                    listOfLists.append(listen)
+    # Clean the combinations
+    for theList in listOfLists:
+        for theList2 in listOfLists:
+            if(theList == theList2):
+                listOfLists.remove(theList2)
+
