@@ -87,3 +87,9 @@ class bsubmissions:
 
     def do_submission(self):
         os.system(f'bsub < {self.jobName}.sh')
+
+def make_list_name(theList):
+    theString = ""
+    for i in theList:
+        theString = theString + str(i)
+    return theString
