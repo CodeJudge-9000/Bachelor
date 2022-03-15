@@ -223,3 +223,13 @@ def LongCommonFinger(system, index):
     
     return fingerPrint
 
+
+def get_all_finger_prints(system, theIndex):
+    lists = get_all_combs_3(system, theIndex)
+    fingerList = []
+    for i in lists:
+        sysCopy = system.copy()
+        idNew = remove_atoms(sysCopy, theIndex, i, relax = False)
+        fingerPrint = ShortCommonFinger(sysCopy, idNew)
+        fingerList.append(fingerPrint)
+    return fingerList
