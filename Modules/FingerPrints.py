@@ -229,7 +229,7 @@ def get_all_finger_prints_SCF(system, theIndex):
     fingerList = []
     for i in lists:
         sysCopy = system.copy()
-        idNew = remove_atoms(sysCopy, theIndex, i, relax = False)
+        idNew = remove_atoms(sysCopy, theIndex, i, relax = False, overwriteCalc = False)
         fingerPrint = ShortCommonFinger(sysCopy, idNew)
         fingerList.append(fingerPrint)
     return fingerList
