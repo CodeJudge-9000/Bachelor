@@ -173,27 +173,40 @@ def get_all_combs_3(system, index):
     ids = get_removed_indeces(system, index)
     
     # make all possible combinations
-    listOfLists = list()
+    listOfLists3 = list()
     for i in ids:
         for j in ids:
             for k in ids:
                 if(i!=j and i!=k and j!=k):
                     listen = [i,j,k]
                     listen.sort()
-                    listOfLists.append(listen)
+                    listOfLists3.append(listen)
+                    
+    listOfLists2 = list()
+    for i in ids:
+        for j in ids:
+            if(i!=j):
+                listen = [i,j]
+                listen.sort()
+                listOfLists2.append(listen)
+    
+    listOfLists1 = list()
+    for i in ids:
+        listen = [i]
+        listen.sort()
+        listOfLists1.append(listen)
+        
+    listOfLists = listOfLists1 + listOfLists2 + listOfLists3  
     """
     # Clean the combinations
     for theList in listOfLists:
         for theList2 in listOfLists:
             if(theList == theList2):
                 listOfLists.remove(theList2)
-    """      
-         
+    """            
     # Unique the combinations
     uniqueList = []
     for j in listOfLists:
         if(j not in uniqueList):
             uniqueList.append(j)
-    
-    return uniqueList          
-
+    return uniqueList
