@@ -6,6 +6,7 @@ import numpy as np
 import math as m
 from math import sqrt
 from random import uniform
+from random import randint
 from copy import copy
 
 
@@ -16,6 +17,8 @@ class KMC:
         self.total_sim_time = 0 # Some time unit. Figure this one out later
         self.current_sim_time = 0 # Same, figure out the time later
         self.rate_constant = self.get_rate_constant() # Calculate the rate constant for the system
+        self.energy_cutoff_S = self.get_energy_cutoff() # Calculate the energy cutoff for our atom (S)
+        self.b_cutoff_S = self.get_b_cutoff() # Calculate the b-cutoff for our atom (S)
         self.TDlib = TDlib # TD energies in eV
         self.fingerPrint = fingerPrint # Name of the fingerPrint used
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV)
@@ -40,6 +43,20 @@ class KMC:
 
 
     def simulate_electron(self):
+        # Choose which electron to interact with
+        sideLen = len(self.grid_S[-1])
+
+        a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
+
+        # Figure out the interaction distance (b-value) of the electron and atom
+        b_cutoff = self.get_b_cutoff()
+
+
+        p1 = uniform(0, b_cutoff**2)
+        b = m.sqrt(p1)
+
+        # Something something energy transferred depending on distance
+
 
         return
     
@@ -51,7 +68,7 @@ class KMC:
         self.grid_S[1][:][:] = False # Set the middle-layer to be false
 
         # Create Mo grid
-        self.grid_Mo = np.ones((tempSize, tempSize), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        self.grid_Mo = np.ones((tempSize-1, tempSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
         return
     
@@ -75,6 +92,10 @@ class KMC:
     
     def get_b_cutoff(self):
         # Use the highest TD value to find the b cutoff
+
+        return
+
+    def get_energy_cutoff(self):
 
         return
 
