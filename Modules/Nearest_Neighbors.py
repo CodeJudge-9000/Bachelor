@@ -173,27 +173,51 @@ def get_all_combs_3(system, index):
     ids = get_removed_indeces(system, index)
     
     # make all possible combinations
-    listOfLists = list()
+    listOfLists3 = list()
     for i in ids:
         for j in ids:
             for k in ids:
                 if(i!=j and i!=k and j!=k):
                     listen = [i,j,k]
                     listen.sort()
-                    listOfLists.append(listen)
-    """
-    # Clean the combinations
-    for theList in listOfLists:
-        for theList2 in listOfLists:
-            if(theList == theList2):
-                listOfLists.remove(theList2)
-    """      
-         
+                    listOfLists3.append(listen)
+    listOfLists3 = make_unique(listOfLists3)
+    return listOfLists3
+
+def get_all_combs_2(system, index):
+    ids = get_removed_indeces(system, index)
+    listOfLists2 = list()
+    for i in ids:
+        for j in ids:
+            if(i!=j):
+                listen = [i,j]
+                listen.sort()
+                listOfLists2.append(listen)
+    listOfLists2 = make_unique(listOfLists2)
+    return listOfLists2
+                
+def get_all_combs_1(system, index): 
+    ids = get_removed_indeces(system, index)
+    listOfLists1 = list()
+    for i in ids:
+        listen = [i]
+        listen.sort()
+        listOfLists1.append(listen)
+    listOfLists1 = make_unique(listOfLists1)
+    return listOfLists1
+
+def make_unique(listOfLists):
     # Unique the combinations
     uniqueList = []
     for j in listOfLists:
         if(j not in uniqueList):
             uniqueList.append(j)
-    
-    return uniqueList          
+    return uniqueList
 
+def get_all_combs_tot(system, index):
+    list1 = get_all_combs_1(system, index)
+    list2 = get_all_combs_2(system, index)
+    list3 = get_all_combs_3(system, index)
+    listTot = list1 + list2 + list3
+    return listTot
+    

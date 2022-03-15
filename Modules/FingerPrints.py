@@ -223,8 +223,7 @@ def LongCommonFinger(system, index):
     
     return fingerPrint
 
-
-def get_all_finger_prints_SCF(system, theIndex):
+def get_all_finger_prints_3_SCF(system, theIndex):
     lists = get_all_combs_3(system, theIndex)
     fingerList = []
     for i in lists:
@@ -233,3 +232,81 @@ def get_all_finger_prints_SCF(system, theIndex):
         fingerPrint = ShortCommonFinger(sysCopy, idNew)
         fingerList.append(fingerPrint)
     return fingerList
+
+def get_all_finger_prints_2_SCF(system, theIndex):
+    lists = get_all_combs_2(system, theIndex)
+    fingerList = []
+    for i in lists:
+        sysCopy = system.copy()
+        idNew = remove_atoms(sysCopy, theIndex, i, relax = False, overwriteCalc = False)
+        fingerPrint = ShortCommonFinger(sysCopy, idNew)
+        fingerList.append(fingerPrint)
+    return fingerList
+
+def get_all_finger_prints_1_SCF(system, theIndex):
+    lists = get_all_combs_1(system, theIndex)
+    fingerList = []
+    for i in lists:
+        sysCopy = system.copy()
+        idNew = remove_atoms(sysCopy, theIndex, i, relax = False, overwriteCalc = False)
+        fingerPrint = ShortCommonFinger(sysCopy, idNew)
+        fingerList.append(fingerPrint)
+    return fingerList
+
+
+def make_unique_removals_3_SCF(system, theIndex):
+    # Get the lists
+    fingerList = get_all_finger_prints_3_SCF(system, theIndex)
+    combList = get_all_combs_3(system, theIndex)
+
+    # Unique the combinations
+    uniqueListFinger = []
+    uniqueListComb = []
+    for i, element in enumerate(fingerList):
+        if(element not in uniqueListFinger):
+            uniqueListFinger.append(fingerList[i])
+            uniqueListComb.append(combList[i])
+            
+    return uniqueListFinger, uniqueListComb
+
+def make_unique_removals_2_SCF(system, theIndex):
+    # Get the lists
+    fingerList = get_all_finger_prints_2_SCF(system, theIndex)
+    combList = get_all_combs_2(system, theIndex)
+
+    # Unique the combinations
+    uniqueListFinger = []
+    uniqueListComb = []
+    for i, element in enumerate(fingerList):
+        if(element not in uniqueListFinger):
+            uniqueListFinger.append(fingerList[i])
+            uniqueListComb.append(combList[i])
+            
+    return uniqueListFinger, uniqueListComb
+
+def make_unique_removals_1_SCF(system, theIndex):
+    # Get the lists
+    fingerList = get_all_finger_prints_1_SCF(system, theIndex)
+    combList = get_all_combs_1(system, theIndex)
+
+    # Unique the combinations
+    uniqueListFinger = []
+    uniqueListComb = []
+    for i, element in enumerate(fingerList):
+        if(element not in uniqueListFinger):
+            uniqueListFinger.append(fingerList[i])
+            uniqueListComb.append(combList[i])
+            
+    return uniqueListFinger, uniqueListComb
+
+def get_unqiue_removal_combi(system,index):
+
+    fingers1, rems1 = make_unique_removals_1_SCF(system, index)
+
+    fingers2, rems2 = make_unique_removals_2_SCF(system, index)
+
+    fingers3, rems3 = make_unique_removals_3_SCF(system, index)
+    
+    allFingers = fingers1 + fingers2 + fingers3
+    allRems = rems1 + rems2 + rems3
+    return allFingers, allRems
