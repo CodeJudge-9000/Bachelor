@@ -186,4 +186,6 @@ def get_all_combs_3(system, index):
         for theList2 in listOfLists:
             if(theList == theList2):
                 listOfLists.remove(theList2)
+                
+    return listOfLists
 
