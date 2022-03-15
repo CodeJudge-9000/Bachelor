@@ -12,7 +12,7 @@
 
 # Initialization
 from Nearest_Neighbors import *
-
+from atomic_annihilator import remove_atoms
 
 def SimpleFinger(system, index):
     """
@@ -224,7 +224,7 @@ def LongCommonFinger(system, index):
     return fingerPrint
 
 
-def get_all_finger_prints(system, theIndex):
+def get_all_finger_prints_SCF(system, theIndex):
     lists = get_all_combs_3(system, theIndex)
     fingerList = []
     for i in lists:
