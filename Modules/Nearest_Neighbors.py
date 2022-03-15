@@ -181,11 +181,19 @@ def get_all_combs_3(system, index):
                     listen = [i,j,k]
                     listen.sort()
                     listOfLists.append(listen)
+    """
     # Clean the combinations
     for theList in listOfLists:
         for theList2 in listOfLists:
             if(theList == theList2):
                 listOfLists.remove(theList2)
-                
-    return listOfLists
+    """      
+         
+    # Unique the combinations
+    uniqueList = []
+    for j in listOfLists:
+        if(j not in uniqueList):
+            uniqueList.append(j)
+    
+    return uniqueList          
 
