@@ -3,9 +3,139 @@
 import FingerPrints
 from atomic_annihilator import *
 import numpy as np
+import math as m
 from math import sqrt
 from random import uniform
 from copy import copy
+
+
+class KMC:
+    def __init__(self, tempSize, TDlib, fingerPrint, kinetic_E, electron_dose):
+        self.create_system(tempSize)
+        self.dose = electron_dose # number of electrons/(Å**2 * s)
+        self.total_sim_time = 0 # Some time unit. Figure this one out later
+        self.current_sim_time = 0 # Same, figure out the time later
+        self.rate_constant = self.get_rate_constant() # Calculate the rate constant for the system
+        self.TDlib = TDlib # TD energies in eV
+        self.fingerPrint = fingerPrint # Name of the fingerPrint used
+        self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV)
+        self.missingTDs = [] # Add the missing fingerprints to this list
+    
+
+
+    def set_electron_energy(self, kinetic_E):
+        self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV)
+        return
+    
+    def set_electron_dose(self, electron_dose):
+        self.dose = electron_dose
+        return
+
+
+    def run(self):
+        self.current_sim_time = 0
+        
+        return
+    
+
+
+    def simulate_electron(self):
+
+        return
+    
+
+
+    def create_system(self, tempSize):
+        # Create S grid
+        self.grid_S = np.ones((3, tempSize, tempSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+        self.grid_S[1][:][:] = False # Set the middle-layer to be false
+
+        # Create Mo grid
+        self.grid_Mo = np.ones((tempSize, tempSize), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+
+        return
+    
+
+
+    def get_transferred_energy(self):
+
+        return
+
+
+
+    def get_rate_constant(self):
+        # Determine how many atoms can get hit (In this case the amount of atoms in the bottom layer)
+        numberS = np.sum(self.grid_S[-1])
+
+        # Determine the rate constant
+        rate_constant = self.dose * m.pi * self.get_b_cutoff()**2 * numberS # 1/s
+
+        return rate_constant
+        
+    
+    def get_b_cutoff(self):
+        # Use the highest TD value to find the b cutoff
+
+        return
+
+
+    def time_step(self):
+        # Calculate how long passed
+        timePassed = -1 * m.log(uniform(0.0000000001, 1.0))/self.rate_constant # Change in seconds
+
+        # Total time ran update
+        self.total_sim_time += timePassed
+
+        # This simulation cycle update
+        self.current_sim_time += timePassed
+
+        return
+
+
+
+    def get_TD(self, index):
+        """
+        Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
+        """
+        # First get the fingerprint for the corresponding atom id
+        finger_method = getattr(FingerPrints, self.fingerPrint)
+        finger = finger_method(self.system, index)
+        
+        ### BUGTESTING ###
+        if finger[0] == 4 or finger[0] == 6:
+            print(index, finger)
+        ### BUGTESTING ###
+        
+        # Now run through the pandas dataframe, and check if there are any corresponding value
+        if len(self.TDlib[self.TDlib["finger"] == str(finger)]) == 0:
+            # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
+            if finger not in self.missingTDs:
+                self.missingTDs.append(finger)
+            return False
+        
+        # If there are at least one corresponding TD value, take the average of all the values and return the value
+        else:
+            return self.TDlib[self.TDlib["finger"] == str(finger)].mean()["Td"]
+    
+    
+
+    def get_missing_TDs(self):
+        """
+        Returns a list of all the fingerprints missing a TD value.
+        """
+        return self.missingTDs
+    
+
+
+    def clear_missing_TDs(self):
+        "Clears the missing TD list."
+        self.missingTDs = []
+        return
+
+
+
+
+
 
 # 2D distance function
 def Dist_2D(pos1, pos2):
@@ -14,7 +144,7 @@ def Dist_2D(pos1, pos2):
     return sqrt(d1**2 + d2**2)
 
 
-class KMC:
+class KMC_OLD:
     def __init__(self, system, TDlib, fingerPrint, eE):
         self.system = system.copy() # Create a copy of the ase system
         self.TDlib = TDlib # TD energies in eV
