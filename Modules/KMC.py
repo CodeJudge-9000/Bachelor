@@ -2,6 +2,7 @@
 # Initialization
 import FingerPrints
 from atomic_annihilator import *
+from ase import Atoms
 import numpy as np
 import math as m
 from math import sqrt
@@ -107,12 +108,56 @@ class KMC:
         # Create S grid
         self.grid_S = np.ones((3, tempSize, tempSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
         self.grid_S[1][:][:] = False # Set the middle-layer to be false
-        self.grid_S[:][0][0] = False # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+        for i in range(self.grid_S.shape[0]):
+            self.grid_S[i][0][0] = False # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
 
         # Create Mo grid
         self.grid_Mo = np.ones((tempSize-1, tempSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
         return
+    
+
+
+    def grid_to_atoms(self):
+        """Converts the current grids into an ase atoms object, and returns it"""
+        atomS_list = []
+        atomMo_list = []
+        intera1 = 3.18
+        intera2 = (1.59,2.754)
+        interL = 1.595
+
+        # First construct the list of S atoms
+        # Go over each layer
+        for L in range(self.grid_S.shape[0]):
+            # Go over each first coordinate (aka row 'r' or a1)
+            for a1 in range(self.grid_S.shape[1]):
+                # Go over each second coordinate (aka column 'c' or a2)
+                for a2 in range(self.grid_S.shape[2]):
+                    # Begin at the first column in the first layer
+                    if self.grid_S[L][a1][a2] == True:
+                        atomS_list.append([a1*intera1 + a2*intera2[0],a2*intera2[1],(L-1)*interL])
+
+        # Now construct the list of Mo atoms, using much the same method
+        # Go over each first coordinate (aka row 'r' or a1)
+        for a1 in range(self.grid_Mo.shape[0]):
+            # Go over each second coordinate (aka column 'c' or a2)
+            for a2 in range(self.grid_Mo.shape[1]):
+                # Begin at the first column in the first layer
+                if self.grid_Mo[a1][a2] == True:
+                    atomMo_list.append([a1*intera1 + a2*intera2[0] + 3.18,a2*intera2[1] + 1.836, 0])
+
+        # Now that we've constructed the coordinate lists, we construct the name of the system
+        sysString = f"S{len(atomS_list)}Mo{len(atomMo_list)}"
+
+        # And now we finally construct the Atoms object
+        system = Atoms(sysString,
+                    positions=atomS_list + atomMo_list,
+                    cell=[1,1,1],
+                    pbc=[0, 0, 0])
+
+        system.center(vacuum = 1)
+        
+        return system
     
 
 
