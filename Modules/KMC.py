@@ -5,10 +5,8 @@ from atomic_annihilator import *
 from ase import Atoms
 import numpy as np
 import math as m
-from math import sqrt
 from random import uniform
 from random import randint
-from copy import copy
 
 
 class KMC:
