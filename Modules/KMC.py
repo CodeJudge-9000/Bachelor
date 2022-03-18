@@ -1,6 +1,5 @@
 
 # Initialization
-from inspect import stack
 import FingerPrints
 from atomic_annihilator import *
 from ase import Atoms
