@@ -22,6 +22,7 @@ class KMC:
         self.fingerPrint = fingerPrint # Name of the fingerPrint used
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV) <- Units are *important*
         self.gridStack = np.array([np.array([self.grid_S, self.grid_Mo, self.total_sim_time], dtype=object)]) # np array used to store the two grids, as well as the 
+        self.S_init = np.sum(self.grid_S[-1])
 
         # Define some constants
         self.m_e = 9.1093837015*10**(-31) # Electron mass in kg
@@ -253,6 +254,13 @@ class KMC:
         v = self.get_electron_velocity()
         m_r = (self.m_e) / (1 - (v/self.speed_of_light_si)**2)
         return m_r
+    
+    def get_scattering_cross_section(self):
+        """Calculates and returns the current scattering cross-section for the bottom layer of the S-grid"""
+        curS = np.sum(self.grid_S[-1])
+        scatSection = (self.S_init - curS) / (self.S_init * self.dose * self.total_sim_time)
+
+        return scatSection
 
     def a(self, atomSymb):
         """Calculates the 'a' parameter, and returns it in 1/m"""
