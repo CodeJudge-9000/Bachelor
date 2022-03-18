@@ -36,8 +36,8 @@ class KMC:
         self.relativistic_electron_mass = self.get_relativistic_electron_mass() # The relativistic electron mass in kg
         self.electron_velocity = self.get_electron_velocity() # Electron velocity in m/s
         self.energy_cutoff_S = self.get_energy_cutoff("S") # Calculate the energy cutoff for our atom type (S)
-        self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
+        self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
 
         # Create the initial (and empty) missing fingerprints list
         self.missingTDs = [] # Add the missing fingerprints to this list
@@ -45,11 +45,23 @@ class KMC:
 
 
     def set_electron_energy(self, kinetic_E):
+        """Updates the electron energy"""
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV)
+
+        # Remember to update the dependent functions
+        self.electron_velocity = self.get_electron_velocity()
+        self.energy_cutoff_S = self.get_energy_cutoff("S")
+        self.relativistic_electron_mass = self.get_relativistic_electron_mass()
+        self.a_S = self.a("S")
+        self.b_cutoff_S = self.get_b_cutoff("S")
         return
     
     def set_electron_dose(self, electron_dose):
+        """Updates the electron dose"""
         self.dose = electron_dose
+
+        # Remember to update the dependent functions
+        self.rate_constant_S = self.get_rate_constant("S")
         return
 
 
@@ -206,6 +218,13 @@ class KMC:
         self.grid_S = self.gridStack[-1][0]
         self.grid_Mo = self.gridStack[-1][1]
         self.total_sim_time = self.gridStack[-1][2]
+
+        # Then update all the other required stuff
+        self.S_init = np.sum(self.grid_S[0])
+        self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
+        self.energy_cutoff_S = self.get_energy_cutoff("S") # Calculate the energy cutoff for our atom type (S)
+        self.a_S = self.a("S") # Calculate 'a'
+        self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
 
         return
 
