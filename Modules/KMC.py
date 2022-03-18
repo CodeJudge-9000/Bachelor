@@ -51,8 +51,12 @@ class KMC:
         return
 
 
-    def run(self):
+    def run(self, runTime):
         self.current_sim_time = 0
+        
+        while self.current_sim_time < runTime:
+            if self.simulate_electron() == 0:
+                self.time_step()
         
         return
     
@@ -65,16 +69,37 @@ class KMC:
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
 
         # Figure out the interaction distance (b-value) of the electron and atom
-        b_cutoff = self.get_b_cutoff()
+        b = m.sqrt(uniform(0, self.b_cutoff_S**2))
+        
+        # Figure out how much energy is transferred
+        E_T = self.get_transferred_energy(b, "S")
 
+        if E_T > self.energy_cutoff_S:
+            E_T = self.energy_cutoff_S
 
-        p1 = uniform(0, b_cutoff**2)
-        b = m.sqrt(p1)
+        # Get the fingerprint for the atom
+        fingerPrint = self.get_fingerPrint() # TODO
+        
+        # Now check whether the transferred energy is higher than the TD value for this atom
+        TD = self.get_TD(fingerPrint) # TODO
 
-        # Something something energy transferred depending on distance
+        if TD == None:
+            return 1
+        
+        if E_T >= TD:
+            # remove atom if the transferred energy exceeds the TD value
+            self.grid_S[-1][a1][a2] = False
 
+            # Then update the rate constant for the system
+            self.rate_constant_S = self.get_rate_constant()
 
-        return
+            # Then return 0
+            return 0
+        else:
+            # Otherwise, return 1
+            return 1
+
+        return 1
     
 
 
@@ -206,7 +231,7 @@ class KMC:
 
 
 
-    def get_TD(self, index):
+    def get_TD(self, index): # UPDATE FROM ATOMS SYSTEM TO GRID SYSTEM - TODO
         """
         Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
@@ -224,7 +249,7 @@ class KMC:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
             if finger not in self.missingTDs:
                 self.missingTDs.append(finger)
-            return False
+            return None
         
         # If there are at least one corresponding TD value, take the average of all the values and return the value
         else:
