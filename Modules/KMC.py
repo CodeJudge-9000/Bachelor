@@ -1,5 +1,6 @@
 
 # Initialization
+from inspect import stack
 import FingerPrints
 from atomic_annihilator import *
 from ase import Atoms
@@ -133,8 +134,16 @@ class KMC:
         return
 
 
-    def grid_to_atoms(self):
+    def current_grid_to_atoms(self):
         """Converts the current grids into an ase atoms object, and returns it"""
+        return self.grid_to_atoms(-1)
+
+    def grid_to_atoms(self, stackLayer):
+        """Converts the given gridStack grids into an ase atoms object, and returns it"""
+        # Get the S and Mo grid
+        grid_S = self.gridStack[stackLayer][0]
+        grid_Mo = self.gridStack[stackLayer][1]
+
         atomS_list = []
         atomMo_list = []
         intera1 = 3.18
@@ -143,22 +152,22 @@ class KMC:
 
         # First construct the list of S atoms
         # Go over each layer
-        for L in range(self.grid_S.shape[0]):
+        for L in range(grid_S.shape[0]):
             # Go over each first coordinate (aka row 'r' or a1)
-            for a1 in range(self.grid_S.shape[1]):
+            for a1 in range(grid_S.shape[1]):
                 # Go over each second coordinate (aka column 'c' or a2)
-                for a2 in range(self.grid_S.shape[2]):
+                for a2 in range(grid_S.shape[2]):
                     # Begin at the first column in the first layer
-                    if self.grid_S[L][a1][a2] == True:
+                    if grid_S[L][a1][a2] == True:
                         atomS_list.append([a1*intera1 + a2*intera2[0],a2*intera2[1],(L-1)*interL])
 
         # Now construct the list of Mo atoms, using much the same method
         # Go over each first coordinate (aka row 'r' or a1)
-        for a1 in range(self.grid_Mo.shape[0]):
+        for a1 in range(grid_Mo.shape[0]):
             # Go over each second coordinate (aka column 'c' or a2)
-            for a2 in range(self.grid_Mo.shape[1]):
+            for a2 in range(grid_Mo.shape[1]):
                 # Begin at the first column in the first layer
-                if self.grid_Mo[a1][a2] == True:
+                if grid_Mo[a1][a2] == True:
                     atomMo_list.append([a1*intera1 + a2*intera2[0] + 3.18,a2*intera2[1] + 1.836, 0])
 
         # Now that we've constructed the coordinate lists, we construct the name of the system
