@@ -12,9 +12,9 @@ from copy import copy
 
 
 class KMC:
-    def __init__(self, tempSize, TDlib, fingerPrint, kinetic_E, electron_dose):
+    def __init__(self, squareSize, TDlib, fingerPrint, kinetic_E, electron_dose):
         # First create the system
-        self.create_system(tempSize)
+        self.create_system(squareSize)
 
         # Define a bunch of internal parameters
         self.dose = electron_dose # number of electrons/(Å**2 * s)
@@ -22,6 +22,7 @@ class KMC:
         self.TDlib = TDlib # TD energies in eV
         self.fingerPrint = fingerPrint # Name of the fingerPrint used
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV) <- Units are *important*
+        self.gridStack = np.array([np.array([self.grid_S, self.grid_Mo, self.total_sim_time], dtype=object)]) # np array used to store the two grids, as well as the 
 
         # Define some constants
         self.m_e = 9.1093837015*10**(-31) # Electron mass in kg
@@ -58,6 +59,7 @@ class KMC:
         while self.current_sim_time < runTime:
             self.simulate_electron()
             self.time_step()
+            self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, 1],dtype=object)])))
         
         return
     
@@ -66,8 +68,14 @@ class KMC:
     def simulate_electron(self): # Fix this thing
         # Choose which electron to interact with
         sideLen = len(self.grid_S[-1])
-
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
+
+        # Get the fingerprint for the atom
+        fingerPrint = self.get_fingerPrint(a1, a2)
+
+        if fingerPrint == None:
+            # Return 1 if there is no atom at (2, a1, a2)
+            return 1
 
         # Figure out the interaction distance (b-value) of the electron and atom
         b = m.sqrt(uniform(0, self.b_cutoff_S**2))
@@ -77,14 +85,12 @@ class KMC:
 
         if E_T > self.energy_cutoff_S:
             E_T = self.energy_cutoff_S
-
-        # Get the fingerprint for the atom
-        fingerPrint = self.get_fingerPrint() # TODO
         
         # Now check whether the transferred energy is higher than the TD value for this atom
-        TD = self.get_TD(fingerPrint) # TODO
+        TD = self.get_TD(fingerPrint)
 
         if TD == None:
+            # Return 1 if there is no corresponding TD value
             return 1
         
         if E_T >= TD:
@@ -104,18 +110,27 @@ class KMC:
     
 
 
-    def create_system(self, tempSize):
+    def create_system(self, squareSize):
         # Create S grid
-        self.grid_S = np.ones((3, tempSize, tempSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+        self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
         self.grid_S[1][:][:] = False # Set the middle-layer to be false
         for i in range(self.grid_S.shape[0]):
             self.grid_S[i][0][0] = False # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
 
         # Create Mo grid
-        self.grid_Mo = np.ones((tempSize-1, tempSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
         return
     
+
+
+    def reset(self):
+        """Creates and updates the current grids with undamaged ones using the size of the current grids. Also resets the total simulation time."""
+        squareSize = self.grid_S.shape[2]
+        self.create_system(squareSize)
+        self.total_sim_time = 0
+
+        return
 
 
     def grid_to_atoms(self):
@@ -159,6 +174,21 @@ class KMC:
         
         return system
     
+    def save(self, fileName):
+        np.save(fileName, self.gridStack)
+        return
+
+    def load(self, fileName):
+        """Loads and overwrites the current grids as well as gridStack when given a valid filename (file extension not needed)"""
+        # Load the gridStack from file
+        self.gridStack = np.load(f"{fileName}.npy")
+
+        # Then overwrite the current grids and simulation times with the loaded gridStack
+        self.grid_S = self.gridStack[-1][0]
+        self.grid_Mo = self.gridStack[-1][1]
+        self.total_sim_time = self.gridStack[-1][2]
+
+        return
 
 
     def get_transferred_energy(self, b, atomSymb):
@@ -277,9 +307,10 @@ class KMC:
 
 
     def get_fingerPrint(self, a1, a2):
+        """Calculates and returns the fingerprint of the S atom on the last layer of the S grid, with the coordinates (2, a1, a2)"""
         # First check if there is actually an atom at the given coordinates
         if self.grid_S[-1][a1][a2] == False:
-            return 1
+            return None
 
         # Now determine the amount of Mo neighbors (and save the coordinates in a list)
         # Given the coordinates of a S atom, the Mo neighbor would be at:
@@ -311,12 +342,12 @@ class KMC:
         return fingerPrint
     
 
-    def get_TD(self, a1, a2): # UPDATE FROM ATOMS SYSTEM TO GRID SYSTEM - TODO
+    def get_TD(self, a1, a2):
         """
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
         # First get the fingerprint for the corresponding indices
-        finger = self.get_fingerPrint() # TODO
+        finger = self.get_fingerPrint(a1, a2)
 
         # Now run through the pandas dataframe, and check if there are any corresponding value
         if len(self.TDlib[self.TDlib["finger"] == str(finger)]) == 0:
