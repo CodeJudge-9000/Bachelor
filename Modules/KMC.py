@@ -55,8 +55,8 @@ class KMC:
         self.current_sim_time = 0
         
         while self.current_sim_time < runTime:
-            if self.simulate_electron() == 0:
-                self.time_step()
+            self.simulate_electron()
+            self.time_step()
         
         return
     
@@ -107,6 +107,7 @@ class KMC:
         # Create S grid
         self.grid_S = np.ones((3, tempSize, tempSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
         self.grid_S[1][:][:] = False # Set the middle-layer to be false
+        self.grid_S[:][0][0] = False # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
 
         # Create Mo grid
         self.grid_Mo = np.ones((tempSize-1, tempSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
@@ -230,6 +231,40 @@ class KMC:
         return
 
 
+    def get_fingerPrint(self, a1, a2):
+        # First check if there is actually an atom at the given coordinates
+        if self.grid_S[-1][a1][a2] == False:
+            return 1
+
+        # Now determine the amount of Mo neighbors (and save the coordinates in a list)
+        # Given the coordinates of a S atom, the Mo neighbor would be at:
+        #   (a1 - 1, a2 - 1), (a1 - 1, a2), (a1, a2 - 1)
+        toReview = [(a1 - 1, a2 - 1, 0)] # a1 and a2 will never be 0 at the same time for our square molecule, and the corner at max coords is no issue
+        if a1 != 0 and a2 != len(self.grid_S):
+            toReview.append((a1 - 1, a2, 1))
+        if a2 != 0 and a1 != len(self.grid_S):
+            toReview.append((a1, a2 - 1, 2))
+        
+        # Now check how many Mo atoms are at the positions, and how many common neighbors there are
+        nMo = 0
+        nS_list = []
+        for e in toReview:
+            nS = 0
+            if self.grid_Mo[e[0],e[1]]:
+                nMo += 1
+                nS += self.grid_S[-1][e[0]+1][e[1]]
+                nS += self.grid_S[-1][e[0]+1][e[1]+1]
+                nS += self.grid_S[-1][e[0]][e[1]+1]
+            
+            nS_list.append(nS)
+        nS_list.sort()
+        nS_list.append(0) # The fingerprint allows for up to 4 NN Mo atoms, but in our case there will at most be 3, so this is a quick fix
+
+        # Now create the actual fingerprint
+        fingerPrint = [nMo].append(nS_list)
+
+        return fingerPrint
+    
 
     def get_TD(self, a1, a2): # UPDATE FROM ATOMS SYSTEM TO GRID SYSTEM - TODO
         """
