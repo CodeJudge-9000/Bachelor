@@ -3,6 +3,7 @@
 import FingerPrints
 from atomic_annihilator import *
 from ase import Atoms
+from ase.io.Trajectory import TrajectoryWriter
 import numpy as np
 import math as m
 from random import uniform
@@ -61,7 +62,6 @@ class KMC:
         
         return
     
-
 
     def simulate_electron(self): # Fix this thing
         # Choose which electron to interact with
@@ -179,6 +179,18 @@ class KMC:
         system.center(vacuum = 1)
         
         return system
+    
+
+
+    def gridStack_TrajectoryWriter(self, filename):
+        """Converts the current gridStack to atoms objects and writes them to a .traj file"""
+        writer = TrajectoryWriter(f"{filename}.traj", "w")
+
+        for i in range(len(self.gridStack)):
+            sys = self.grid_to_atoms(i)
+            writer.write(atoms = sys)
+
+        return
     
     def save(self, fileName):
         np.save(fileName, self.gridStack)
