@@ -12,16 +12,32 @@ from copy import copy
 
 class KMC:
     def __init__(self, tempSize, TDlib, fingerPrint, kinetic_E, electron_dose):
+        # First create the system
         self.create_system(tempSize)
+
+        # Define a bunch of internal parameters
         self.dose = electron_dose # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
-        self.current_sim_time = 0 # Same, figure out the time later
-        self.rate_constant = self.get_rate_constant() # Calculate the rate constant for the system
-        self.energy_cutoff_S = self.get_energy_cutoff() # Calculate the energy cutoff for our atom (S)
-        self.b_cutoff_S = self.get_b_cutoff() # Calculate the b-cutoff for our atom (S)
         self.TDlib = TDlib # TD energies in eV
         self.fingerPrint = fingerPrint # Name of the fingerPrint used
-        self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV)
+        self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV) <- Units are *important*
+
+        # Define some constants
+        self.m_e = 9.1093837015*10**(-31) # Electron mass in kg
+        self.m_S = 32.06 * 1.660540200*10**(-27) # Sulfur mass in kg
+        self.m_Mo = 95.95 * 1.660540200*10**(-27) # Molybdenum mass in kg
+        self.speed_of_light_si = 2.998*10**8 # 'c' in m/s
+        self.coulomb_k_si = 8.9875517923*10**9 # The coulomb constant in SI units
+
+        # Calculate some of the constant values of the system
+        self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
+        self.relativistic_electron_mass = self.get_relativistic_electron_mass() # The relativistic electron mass in kg
+        self.electron_velocity = self.get_electron_velocity() # Electron velocity in m/s
+        self.energy_cutoff_S = self.get_energy_cutoff("S") # Calculate the energy cutoff for our atom type (S)
+        self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
+        self.a_S = self.a("S") # Calculate 'a'
+
+        # Create the initial (and empty) missing fingerprints list
         self.missingTDs = [] # Add the missing fingerprints to this list
     
 
@@ -42,7 +58,7 @@ class KMC:
     
 
 
-    def simulate_electron(self):
+    def simulate_electron(self): # Fix this thing
         # Choose which electron to interact with
         sideLen = len(self.grid_S[-1])
 
@@ -74,33 +90,109 @@ class KMC:
     
 
 
-    def get_transferred_energy(self):
+    def get_transferred_energy(self, b, atomSymb):
+        """Calculates and returns the transferred energy in eV"""
+        # First calculate the momentum
+        p_trans = (2*self.relativistic_electron_mass * self.electron_velocity) / m.sqrt(b**2 * self.a_S**2 + 1)
 
-        return
+        # Then find other required parameters
+        if atomSymb == "S":
+            m_n = self.m_S
+        elif atomSymb == "Mo":
+            m_n = self.m_Mo
+
+        # Then use the momentum to calculate the energy
+        E_T = 6.241509125*10^18*p_trans**2/(2*m_n)
+
+        return E_T
 
 
 
-    def get_rate_constant(self):
+    def get_rate_constant(self, atomSymb):
+        """Calculates and returns the rate constant of the whole system for ONE type of atom in 1/s"""
         # Determine how many atoms can get hit (In this case the amount of atoms in the bottom layer)
         numberS = np.sum(self.grid_S[-1])
 
         # Determine the rate constant
-        rate_constant = self.dose * m.pi * self.get_b_cutoff()**2 * numberS # 1/s
+        rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb)**2 * numberS # 1/s
 
         return rate_constant
-        
+
+    def get_relativistic_electron_velocity(self):
+        """Calculates and returns the speed of the electrons, considering relativistic effects"""
+        v_rela = 2.998*10**8*m.sqrt(1 - 1/(self.electronKin/(5.1098895*10**5) + 1)**2)
+        return v_rela
     
-    def get_b_cutoff(self):
-        # Use the highest TD value to find the b cutoff
+    def get_electron_velocity(self):
+        """Calculates and returns the classical electron velocity in m/s"""
+        v_rest = m.sqrt(2*self.electronKin/(self.m_e*6.241509125*10**(-18)))
 
-        return
+        return v_rest
+    
+    def get_relativistic_electron_mass(self):
+        """Calculates the relativistic mass of the electron and returns it in kg"""
+        v = self.get_electron_velocity()
+        m_r = (self.m_e) / (1 - (v/self.speed_of_light_si)**2)
+        return m_r
 
-    def get_energy_cutoff(self):
+    def a(self, atomSymb):
+        """Calculates the 'a' parameter, and returns it in 1/m"""
+        # First get the variables in order
+        v_0 = self.get_electron_velocity()
 
-        return
+        if atomSymb == "S":
+            m_n = self.m_S
+            Q = 16
+        elif atomSymb == "Mo":
+            m_n = self.m_Mo
+            Q = 42
+
+        # Now calculate a
+        a = (v_0**2 * self.m_e) / (self.coulomb_k_si * (-1) * Q * (self.m_e/m_n + 1)**3)
+
+        return a
+    
+    def get_b_cutoff(self, atomSymb):
+        """Calculates and returns the cutoff value for b in Å (angstrom)"""
+        # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
+        E_min = self.TDlib["Td"].min() * 1.05
+
+        # Now get the mass of the atomic nucleus of the corresponding atom
+        # The following should (for maximum compatibility) by some library but for now it's just some if-else statements
+        if atomSymb == "S":
+            m_n = self.m_S
+        elif atomSymb == "Mo":
+            m_n = self.m_Mo
+
+        # Get the relativistic mass of our electrons, as well as their velocity
+        m_r = self.get_relativistic_electron_mass()
+        v_0 = self.get_electron_velocity()
+
+        # Get 'a'
+        a = self.a(atomSymb)
+
+        # Calculate the cutoff value for b
+        b_cutoff = 10**(-10)/a * m.sqrt((2*m_r*v_0)**2 / (6.241509125*10**(-18)*E_min*2*m_n))
+
+        # Convert it to Å and return it
+        b_cutoff = b_cutoff * 10**(-10)
+
+        return b_cutoff
+
+    def get_energy_cutoff(self, atomSymb):
+        """Calculates and returns the energy cutoff (maximum) in eV"""
+        if atomSymb == "S":
+            m_n = self.m_S
+        elif atomSymb == "Mo":
+            m_n = self.m_Mo
+
+        E_max = (2* self.electronKin * (self.electronKin + 2*5.1098895*10**5)) / (6.241509125*10**18 * m_n * self.speed_of_light_si**2)
+
+        return E_max
 
 
     def time_step(self):
+        """Increases the total sim time as well as the current sim time using the total rate constant for the system"""
         # Calculate how long passed
         timePassed = -1 * m.log(uniform(0.0000000001, 1.0))/self.rate_constant # Change in seconds
 
@@ -149,181 +241,7 @@ class KMC:
 
 
     def clear_missing_TDs(self):
-        "Clears the missing TD list."
+        """Clears the missing TD list."""
         self.missingTDs = []
         return
 
-
-
-
-
-
-# 2D distance function
-def Dist_2D(pos1, pos2):
-    d1 = pos1[0] - pos2[0] # The x-axis
-    d2 = pos1[1] - pos2[1] # The y-axis
-    return sqrt(d1**2 + d2**2)
-
-
-class KMC_OLD:
-    def __init__(self, system, TDlib, fingerPrint, eE):
-        self.system = system.copy() # Create a copy of the ase system
-        self.TDlib = TDlib # TD energies in eV
-        self.fingerPrint = fingerPrint # Name of the fingerPrint used
-        self.electronE = eE # Same unit as TD values (eV?)
-        self.missingTDs = [] # Add the missing fingerprints to this list
-    
-    def set_electron_energy(self, eE):
-        self.electronE = eE # eV
-        return
-    
-    def run(self, n):
-        """
-        Simulates n electrons, and return True or False depending on whether any TD values were missing. If no TD value was missing, return True, otherwise return False.
-        """
-        
-        tempmissingTDs = copy(self.missingTDs)
-        for i in range(n):
-            self.simulate_electron()
-        
-        return tempmissingTDs == self.missingTDs
-        
-    
-    def simulate_electron(self):
-        
-        #
-        # Note: X - Done, ? - Dummy/testing function implemented, M - Not implemented
-        #
-        # 1.X Determine where to hit structure (Part of determine_hit. It chooses a x and y coordinate seperately from an uniform distribution)
-        # 2.X Do something with the cross-section of atoms nearby (perhaps a search?), to determine which atom(s) are affected
-        # 3.X Check whether a TD value exists for this/these atom(s). If not, return False
-        # 4.? Determine how much energy is transferred, if energy is transferred
-        # - Use mr. PHD's distribution for this
-        # 5.X If above threshold value, remove the atom
-        # 5.1.M Maybe implement some other behaviour, such as removing neighboring atoms
-        # 5.2.M Also perhaps add the energy to the system in case it does not exceed the TD
-        #
-        # X Return True at the end (if the TD value for the atom exists), otherwise Return False at some point
-        #
-        
-        # Determine whether anything is hit by the electron
-        interSect = self.determine_hit()
-        
-        if interSect == False:
-            return
-        
-        # Now that we have one (or more) hits, we choose the closest intersect
-        lowestDist = 99999
-        lowestIndex = None
-        for e in interSect:
-            if e[1] < lowestDist:
-                lowestDist = e[1]
-                lowestIndex = e[0]
-        
-        # Get the TD value for the closest intersect
-        TD = self.get_TD(lowestIndex)
-        if TD == False:
-            return False
-        
-        # Now we figure out how much energy is transferred
-        energyTransfer = self.dummy_energy_transferred()
-        
-        # If this exceeds the TD value for the atom, remove it (use the atomRemover function as to remove a list easily, and possibly keep track of indices in the future)
-        if  TD <= energyTransfer:
-            print("Removed one")
-            remove_atoms(self.system, atomRemoveIndex = lowestIndex, relax = False, overwriteCalc = True)
-        
-        return True
-    
-    def cross_section(self):
-        ### TEMPORARILY A VIRTUAL FUNCTION ###
-        raise NotImplementedError()
-        
-    def cross_dummy(self, symbol):
-        """
-        Dummy-function to imitate calculating the interaction cross-section of an atom.
-        """
-        if symbol == "S":
-            return 2
-        else:
-            return 5
-    
-    def energy_transferred(self):
-        ### TEMPORARILY A VIRTUAL FUNCTION ###
-        raise NotImplementedError()
-    
-    def dummy_energy_transferred(self):
-        """
-        Dummy-function to imitate calculating the energy transferred from an electron to an atom.
-        """
-        return self.electronE
-        
-    
-    def determine_hit(self):
-        """
-        Determines where an electron enters the structures, and determines whether it'll intersect any cross-section for any atoms. It then returns a list containing the IDs and distances of these atom if True (tuples in a list), otherwise it returns False.
-        
-        The returned list is in the following format:
-            [(index, distance_to_atom), (index, distance_to_atom), ...]
-        """
-        # Get cell dimensions
-        cell = self.system.get_cell() # get_cell returns the lengths of the cell, as 3 vectors stretching out from the point (0, 0, 0)
-        xLen = cell[0][0]
-        yLen = cell[1][1]
-        
-        # Choose a random point (x, y) within the cell
-        x = uniform(0, xLen) # TODO
-        y = uniform(0, yLen) # TODO
-        point = (x, y)
-        
-        # Get the center of mass' third coordinates
-        comZ = self.system.get_center_of_mass()[2]
-        
-        # Check for all atoms (that are S) below the center of mass if any cross-sections are intersected
-        interSect = [(atom.index, Dist_2D(atom.position, point))
-                       for atom in self.system if atom.position[2] < comZ
-                       and atom.symbol == "S"
-                       and Dist_2D(atom.position, point) <= self.cross_dummy(atom.symbol)] # REPLACE cross_dummy() WITH cross_section() WHEN POSSIBLE
-        # If no intercepts were found, return false
-        if len(interSect) == 0:
-            return False
-        
-        # Else, return a list of tuples, with each tuple containing the atomic index, and the distance from the electron to the atom (usually just return a tuple, but for futureproofing we return a list)
-        else:
-            return interSect
-        
-    def get_TD(self, index):
-        """
-        Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
-        """
-        # First get the fingerprint for the corresponding atom id
-        finger_method = getattr(FingerPrints, self.fingerPrint)
-        finger = finger_method(self.system, index)
-        
-        ### BUGTESTING ###
-        if finger[0] == 4 or finger[0] == 6:
-            print(index, finger)
-        ### BUGTESTING ###
-        
-        # Now run through the pandas dataframe, and check if there are any corresponding value
-        if len(self.TDlib[self.TDlib["finger"] == str(finger)]) == 0:
-            # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
-            if finger not in self.missingTDs:
-                self.missingTDs.append(finger)
-            return False
-        
-        # If there are at least one corresponding TD value, take the average of all the values and return the value
-        else:
-            return self.TDlib[self.TDlib["finger"] == str(finger)].mean()["Td"]
-    
-    
-    def get_missing_TDs(self):
-        """
-        Returns a list of all the fingerprints missing a TD value.
-        """
-        return self.missingTDs
-    
-    def clear_missing_TDs(self):
-        "Clears the missing TD list."
-        self.missingTDs = []
-        return
