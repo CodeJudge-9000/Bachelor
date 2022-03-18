@@ -116,9 +116,9 @@ class KMC:
 
 
     def get_transferred_energy(self, b, atomSymb):
-        """Calculates and returns the transferred energy in eV"""
+        """Calculates and returns the transferred energy in eV, given the b-value in Å"""
         # First calculate the momentum
-        p_trans = (2*self.relativistic_electron_mass * self.electron_velocity) / m.sqrt(b**2 * self.a_S**2 + 1)
+        p_trans = (2*self.relativistic_electron_mass * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
 
         # Then find other required parameters
         if atomSymb == "S":
@@ -231,19 +231,13 @@ class KMC:
 
 
 
-    def get_TD(self, index): # UPDATE FROM ATOMS SYSTEM TO GRID SYSTEM - TODO
+    def get_TD(self, a1, a2): # UPDATE FROM ATOMS SYSTEM TO GRID SYSTEM - TODO
         """
-        Using an id, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
+        Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
-        # First get the fingerprint for the corresponding atom id
-        finger_method = getattr(FingerPrints, self.fingerPrint)
-        finger = finger_method(self.system, index)
-        
-        ### BUGTESTING ###
-        if finger[0] == 4 or finger[0] == 6:
-            print(index, finger)
-        ### BUGTESTING ###
-        
+        # First get the fingerprint for the corresponding indices
+        finger = self.get_fingerPrint() # TODO
+
         # Now run through the pandas dataframe, and check if there are any corresponding value
         if len(self.TDlib[self.TDlib["finger"] == str(finger)]) == 0:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
