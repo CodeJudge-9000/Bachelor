@@ -160,6 +160,7 @@ def removed_categorize(df):
     df['neigbohrs'] = categoryVector
     return(df)
 
+
 def finger_print_search(df, fingerPrint = []):
     ## Kigger i denne section på fingerprints som er lignene
     ins = []
@@ -169,9 +170,24 @@ def finger_print_search(df, fingerPrint = []):
     df2 = df[ins]
     return(df2)
 
+
 # Similar system, similar fingerprint  ## SORTING SO WE ONLY See the 6x6 results
 def remove_small_system(df2):
     df3 = df2[df2['startsystemname'] == 'eq_struct_6x6.traj']
     df3
     df3 = df3.reset_index()
     return(df3)
+
+
+
+def get_trajectories_from_table(df):
+    # LAD OS EXTRAHERER VORES TING FRA TABELLEN
+    Trajs = []
+    for g in range(0,len(df)):
+        filename = df.loc[g].trajFile
+        if(filename[-6] == "_"):
+            filename = filename[:-6] + ".traj"
+        os.chdir("./trajec")
+        T = Trajectory(filename)
+        Trajs.append(T)
+        os.chdir("..")
