@@ -168,16 +168,23 @@ def finger_print_search(df, fingerPrint = []):
         ins.append( df['shortFinger'][i] == fingerPrint)
 
     df2 = df[ins]
+    try:
+        df2 = df2.drop(['level_0'], axis = 1)
+    except:
+        pass
+    df2 = df2.reset_index() 
     return(df2)
 
 
 # Similar system, similar fingerprint  ## SORTING SO WE ONLY See the 6x6 results
 def remove_small_system(df2):
     df3 = df2[df2['startsystemname'] == 'eq_struct_6x6.traj']
-    df3
+    try:
+        df3 = df3.drop(['level_0'], axis = 1)
+    except:
+        pass
     df3 = df3.reset_index()
     return(df3)
-
 
 
 def get_trajectories_from_table(df):
@@ -191,3 +198,39 @@ def get_trajectories_from_table(df):
         T = Trajectory(filename)
         Trajs.append(T)
         os.chdir("..")
+    
+    return(Trajs)
+
+
+def sort_out_id(df, index):
+    viewTable = df[df['original_id'] == index].sort_values('removedList', ascending=False)
+    viewTable = viewTable.drop(['level_0'], axis = 1)
+    viewTable = viewTable.reset_index()
+    return(viewTable)
+
+def nn_search(df, fingerPrint = []):
+    ## Kigger i denne section på fingerprints som er lignene
+    ins = []
+    for i in range(0,len(df)):
+        ins.append( df['neigbohrs'][i] == fingerPrint)
+
+    df2 = df[ins]
+    try:
+        df2 = df2.drop(['level_0'], axis = 1)
+    except:
+        pass
+    df2 = df2.reset_index() 
+    return(df2)
+
+def get_same_siders(df):
+    df1 =  nn_search(df, ['S'])
+    df2 =  nn_search(df, ['S','S']) 
+    df3 =  nn_search(df, ['S','S','S'])
+    dff = pd.concat([df1, df2, df3])
+    try:
+        dff = dff.drop(['level_0'], axis = 1)
+    except:
+        pass
+    dff = dff.reset_index()
+    return(dff)
+    

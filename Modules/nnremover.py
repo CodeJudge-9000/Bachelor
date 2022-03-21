@@ -25,7 +25,6 @@ import time
 from FingerPrints import *
 
 
-
 def make_list_name(theList):
     theString = ""
     for i in theList:
@@ -47,28 +46,26 @@ def make_data_point(theIndex, givensystemString,theRadius):
     sys = read(givensystemString)
     copySys = sys.copy()
 
-
-    allNNIndexes = get_removed_indeces(sys = copySys, theIndex = theIndex)
     # Randomize
     #random.shuffle(allNNIndexes)
     # Nope not right now at least
-
+    
     # Make list of lists
-    RemovalLists = make_list_of_lists(allNNIndexes)
+    RemovalLists = get_all_combs_tot(system = copySys, index = theIndex)
 
     ## 
 
     # Variables that we will change
     JobName = "placeHolder"
-    coresAsked = 8
+    coresAsked = 16
 
     # Unchanged variables
     scriptName = "cores.py"
     numHosts = 1
     email = "mathias_lendal@hotmail.dk"
-    mem = "2GB"
-    maxMem = "3GB"
-    wallTime = "24:00"
+    mem = "0.5GB"
+    maxMem = "1.2GB"
+    wallTime = "72:00"
 
     # In this section we just make a jobname, a scriptname, the number of hosts and so on for the file
 
@@ -88,7 +85,7 @@ def make_data_point(theIndex, givensystemString,theRadius):
         # Defining newVar
 
         # Changing jobname, not necessary but it is okay
-        sub.jobName = f"Removals_{len(removals)}"
+        sub.jobName = f"Removals_{len(removals)}_Id{theIndex}"
 
 
         # From here everything is more automatic    
@@ -122,8 +119,48 @@ def make_data_point(theIndex, givensystemString,theRadius):
 
         # Delete subfile and wait such that we don't to things to quickly for system to understand
         sub.delete_bsub_file()
-        time.sleep(5)    
+        time.sleep(5)
+     
+    """Special case, Here the 0 removal case"""
+    repscript = open(scriptName, "w+")
+    # Defining newVar
 
+    # Changing jobname, not necessary but it is okay
+    sub.jobName = f"Removals_Id{theIndex}"
+
+
+    # From here everything is more automatic    
+    #Making the sub file
+    sub.make_bsub_file()
+
+    # Opening original file and make the changeable variable
+    fpy = open(scriptToCopyName, "r+")
+    changeable = fpy.read()
+    fpy.close()
+
+    """ Replacing old variable hardcode with a new one, must change from what one wants to achive """
+    changeable = changeable.replace(f'SYSTEM_NAME', f'\"{givensystemString}\"')
+    changeable = changeable.replace(f'THIS_ARRAY', f'{[]}')
+    listName = make_list_name(removals)
+    changeable = changeable.replace(f'ARRAY_NUMBERS', f'\"none\"')
+    changeable = changeable.replace(f'THE_INDEX', f'{theIndex}')
+    changeable = changeable.replace(f'THE_RADIUS', f'{theRadius}')
+
+    # Deleting everything inside our dummy script
+    repscript.truncate(0)
+    repscript.close()
+
+    # Open script, write our changed code and save it 
+    repscript = open(scriptName, "w+")
+    repscript.write(changeable)
+    repscript.close()
+
+    # Sending the job in
+    sub.do_submission()
+
+    # Delete subfile and wait such that we don't to things to quickly for system to understand
+    sub.delete_bsub_file()
+    time.sleep(5)    
 
 def make_uniquie_points(theIndex, givensystemString):
     theRadius = 5
@@ -156,8 +193,8 @@ def make_uniquie_points(theIndex, givensystemString):
     scriptName = "cores.py"
     numHosts = 1
     email = "mathias_lendal@hotmail.dk"
-    mem = "2GB"
-    maxMem = "3GB"
+    mem = "0.5GB"
+    maxMem = "1.2GB"
     wallTime = "72:00"
 
     # In this section we just make a jobname, a scriptname, the number of hosts and so on for the file
@@ -213,3 +250,5 @@ def make_uniquie_points(theIndex, givensystemString):
         # Delete subfile and wait such that we don't to things to quickly for system to understand
         sub.delete_bsub_file()
         time.sleep(2)
+
+        

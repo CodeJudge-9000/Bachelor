@@ -14,7 +14,7 @@ def find_finger_print_match_simple(index, struct, removalList):
     fingerList = []
     for rem in RemovalLists:
         copySys = struct.copy()
-        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False, overwriteCalc = False)
+        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False)
         fingerList.append(SimpleFinger(system = copySys, index = atomIndex))
     ## Check whitch situation corresponds
 
@@ -42,7 +42,7 @@ def find_finger_print_match_short_common(index, struct, removalList):
     fingerList = []
     for rem in RemovalLists:
         copySys = struct.copy()
-        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False, overwriteCalc = False)
+        atomIndex = remove_atoms(system = copySys, atomIndex = index, atomRemoveIndex = rem, relax = False)
         fingerList.append(ShortCommonFinger(system = copySys, index = atomIndex))
     
     ## Check whitch situation corresponds
@@ -58,6 +58,7 @@ def find_finger_print_match_short_common(index, struct, removalList):
     correspondingList = RemovalLists[position]
     
     return correspondingList
+
 
 def search_for_case_simple(theList, sysString):
     struct = read(sysString)
@@ -83,17 +84,8 @@ def search_for_case_short_common(theList, sysString):
             i += 1
     return i, firstFoundList
 
-def get_all_requests_short_common(searchList, sysString):
-    elementList = []
-    for i in range(0,len(searchList)):
-        theElement = searchList[i]
-        index, RemovList = search_for_case_short_common(theElement, sysString)
-        element = [index, RemovList]
-        elementList.append(element)
-        
-    return elementList
 
-def get_all_requests_simple(searchList, sysString):
+def get_all_requests(searchList, sysString):
     elementList = []
     for i in range(0,len(searchList)):
         theElement = searchList[i]
