@@ -231,7 +231,7 @@ def get_all_finger_prints_3_SCF(system, theIndex):
         idNew = remove_atoms(sysCopy, theIndex, i, relax = False, overwriteCalc = False)
         fingerPrint = ShortCommonFinger(sysCopy, idNew)
         fingerList.append(fingerPrint)
-    return fingerList
+    return fingerList, lists
 
 def get_all_finger_prints_2_SCF(system, theIndex):
     lists = get_all_combs_2(system, theIndex)
@@ -241,72 +241,119 @@ def get_all_finger_prints_2_SCF(system, theIndex):
         idNew = remove_atoms(sysCopy, theIndex, i, relax = False, overwriteCalc = False)
         fingerPrint = ShortCommonFinger(sysCopy, idNew)
         fingerList.append(fingerPrint)
-    return fingerList
+    return fingerList, lists
 
-def get_all_finger_prints_1_SCF(system, theIndex):
-    lists = get_all_combs_1(system, theIndex)
+def get_all_finger_prints_1_SCF(system, index):
+    """
+    Function to get all fingerprint combinations of one removed atom for SCF (Short common fingerprint) 
+
+    """
+
+    # Receiving all posible removal combos
+    lists = get_all_combs_1(system, index)
+
+    # Making a list of all the corresponding fingerprints 
     fingerList = []
     for i in lists:
         sysCopy = system.copy()
-        idNew = remove_atoms(sysCopy, theIndex, i, relax = False, overwriteCalc = False)
+        idNew = remove_atoms(sysCopy, index, i, relax = False, overwriteCalc = False)
         fingerPrint = ShortCommonFinger(sysCopy, idNew)
         fingerList.append(fingerPrint)
-    return fingerList
+    return fingerList, lists
 
 
-def make_unique_removals_3_SCF(system, theIndex):
-    # Get the lists
-    fingerList = get_all_finger_prints_3_SCF(system, theIndex)
-    combList = get_all_combs_3(system, theIndex)
+def make_unique_removals_3_SCF(system, index):
+    """
+    Function to get all unique SCF (Short common fingerprint) combinations for a two removed atom
+    input:
+    system [ASE Object] -> the system one observes 
+    index [Int] -> index of the atom which nearest neigbohrs should be removed
 
-    # Unique the combinations
+    Output:
+    uniqueListFinger [list] -> All unique
+    uniqueListComb [list] -> 
+    """
+
+    # Collecting all fingerprints and combolist which exists
+    fingerList, combList  = get_all_finger_prints_3_SCF(system, index)
+
+    # Collecting unique combinations to spare out some posibilities
     uniqueListFinger = []
     uniqueListComb = []
     for i, element in enumerate(fingerList):
         if(element not in uniqueListFinger):
             uniqueListFinger.append(fingerList[i])
             uniqueListComb.append(combList[i])
-            
-    return uniqueListFinger, uniqueListComb
-
-def make_unique_removals_2_SCF(system, theIndex):
-    # Get the lists
-    fingerList = get_all_finger_prints_2_SCF(system, theIndex)
-    combList = get_all_combs_2(system, theIndex)
-
-    # Unique the combinations
-    uniqueListFinger = []
-    uniqueListComb = []
-    for i, element in enumerate(fingerList):
-        if(element not in uniqueListFinger):
-            uniqueListFinger.append(fingerList[i])
-            uniqueListComb.append(combList[i])
-            
-    return uniqueListFinger, uniqueListComb
-
-def make_unique_removals_1_SCF(system, theIndex):
-    # Get the lists
-    fingerList = get_all_finger_prints_1_SCF(system, theIndex)
-    combList = get_all_combs_1(system, theIndex)
-
-    # Unique the combinations
-    uniqueListFinger = []
-    uniqueListComb = []
-    for i, element in enumerate(fingerList):
-        if(element not in uniqueListFinger):
-            uniqueListFinger.append(fingerList[i])
-            uniqueListComb.append(combList[i])
-            
-    return uniqueListFinger, uniqueListComb
-
-def get_unqiue_removal_combi(system,index):
-
-    fingers1, rems1 = make_unique_removals_1_SCF(system, index)
-
-    fingers2, rems2 = make_unique_removals_2_SCF(system, index)
-
-    fingers3, rems3 = make_unique_removals_3_SCF(system, index)
     
-    allFingers = fingers1 + fingers2 + fingers3
-    allRems = rems1 + rems2 + rems3
+    return uniqueListFinger, uniqueListComb
+
+def make_unique_removals_2_SCF(system, index):
+    """
+    Function to get all unique SCF (Short common fingerprint) combinations for a two removed atom
+    input:
+    system [ASE Object] -> the system one observes 
+    index [Int] -> index of the atom which nearest neigbohrs should be removed
+
+    Output:
+    allfingers [list] -> All unique fingerprints for the unique removal lists
+    allRems [list] -> All unique fingerprints for the unique removal lists
+    """
+
+    # Collecting all fingerprints and combolist which exists
+    fingerList, combList = get_all_finger_prints_2_SCF(system, index)
+
+    # Collecting unique combinations to spare out some posibilities
+    uniqueListFinger = []
+    uniqueListComb = []
+    for i, element in enumerate(fingerList):
+        if(element not in uniqueListFinger):
+            uniqueListFinger.append(fingerList[i])
+            uniqueListComb.append(combList[i])
+            
+    return uniqueListFinger, uniqueListComb
+
+def make_unique_removals_1_SCF(system, index):
+    """
+    Function to get all unique SCF (Short common fingerprint) combinations for a single removed atom
+    input:
+    system [ASE Object] -> the system one observes 
+    index [Int] -> index of the atom which nearest neigbohrs should be removed
+
+    Output:
+    allfingers [list] -> All unique fingerprints for the unique removal lists
+    allRems [list] -> All unique fingerprints for the unique removal lists
+    """
+
+    # Collecting all fingerprints and combolist which exists
+    fingerList, combList = get_all_finger_prints_1_SCF(system, index)
+
+    # Collecting unique combinations to spare out some posibilities
+    uniqueListFinger = []
+    uniqueListComb = []
+    for i, element in enumerate(fingerList):
+        if(element not in uniqueListFinger):
+            uniqueListFinger.append(fingerList[i])
+            uniqueListComb.append(combList[i])
+
+    return uniqueListFinger, uniqueListComb
+
+def get_unqiue_removal_combi(system, index):
+    """Function for getting one unique combo of removal atoms in the SCF (Short common fingerprint framwork),
+    which gives out one sugestions for the system and the index, and it will spit out all fingerprints it finds
+    and all unique combos of either 1,2 and 3 removed atoms.
+    input:
+    system [ASE Object] -> the system one observes 
+    index [Int] -> index of the atom which nearest neigbohrs should be removed 
+
+    Output:
+    allfingers [list] -> All unique fingerprints for the unique removal lists
+    allRems [list] -> All unique fingerprints for the unique removal lists
+    """
+    # The making of the removals have to be in different functions because, they use different amount of for loops
+    fingers1RemovedAtom, listFor1RemovedAtom = make_unique_removals_1_SCF(system, index)
+    fingers2RemovedAtom, listFor2RemovedAtom = make_unique_removals_2_SCF(system, index)
+    fingers3RemovedAtom, listFor3RemovedAtom = make_unique_removals_3_SCF(system, index)
+    
+    allFingers = fingers1RemovedAtom + fingers2RemovedAtom + fingers3RemovedAtom
+    allRems = listFor1RemovedAtom + listFor2RemovedAtom + listFor3RemovedAtom
     return allFingers, allRems
