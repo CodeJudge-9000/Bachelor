@@ -16,8 +16,6 @@ class KMC:
         self.create_system(squareSize, structType = structType)
 
         # Define a bunch of internal parameters
-        self.squareSize = squareSize
-        self.structType = structType
         self.dose = electron_dose # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
         self.fingerPrint = fingerPrint
@@ -237,155 +235,6 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-        
-        elif structType == "Triangle 100% Mo-Edges":
-            # Create S grid
-            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
-
-            # Now put everything above a line to False
-            for l in range(self.grid_S.shape[0]):
-                for x in range(squareSize):
-                    for y in range(squareSize):
-                        if x + y >= squareSize + 1:
-                            self.grid_S[l][x][y] = False
-
-            # Then set the middle layer to false
-            self.grid_S[1][:][:] = False
-
-            # Also set the sulfur at (0,0) to be false, as it shouldn't be there
-            for i in range(self.grid_S.shape[0]):
-                self.grid_S[i][0][0] = False
-
-            # Create Mo grid
-            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-
-            # Then put everything above a line to False
-            for x in range(squareSize - 1):
-                for y in range(squareSize - 1):
-                    if x + y >= squareSize - 1:
-                        self.grid_Mo[x][y] = False
-        
-        elif structType == "Triangle 50% Mo-Edges":
-            # Create S grid
-            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
-
-            # Now put everything above a line to False
-            for l in range(self.grid_S.shape[0]):
-                for x in range(squareSize):
-                    for y in range(squareSize):
-                        if x + y >= squareSize + 2:
-                            self.grid_S[l][x][y] = False
-
-            # Now set the middle layer to false
-            self.grid_S[1][:][:] = False
-
-            # Then set the outer part of the middle layer to True
-            for x in range(squareSize):
-                for y in range(squareSize):
-                    if x + y == squareSize:
-                        self.grid_S[1][x][y] = True
-
-            self.grid_S[1][0,:] = True
-            self.grid_S[1][:,0] = True
-
-            # Now do the opposite for the upper and lower layer
-            for l in range(self.grid_S.shape[0]):
-                for x in range(squareSize):
-                    for y in range(squareSize):
-                        if x + y >= squareSize and (l == 0 or l == 2):
-                            self.grid_S[l][x][y] = False
-
-            for l in (0, 2):
-                self.grid_S[l][0,:] = False
-                self.grid_S[l][:,0] = False
-
-            # Also set the sulfur at (0,0) to be false, as it shouldn't be there
-            for i in range(self.grid_S.shape[0]):
-                self.grid_S[i][0][0] = False
-
-            # Create Mo grid
-            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-
-            # Then put everything above a line to False
-            for x in range(squareSize - 1):
-                for y in range(squareSize - 1):
-                    if x + y >= squareSize - 1:
-                        self.grid_Mo[x][y] = False
-            
-            
-        elif structType == "Triangle 100% S-Edges":
-            # Create S grid
-            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
-
-            # Now put everything above a line to False
-            for l in range(self.grid_S.shape[0]):
-                for x in range(squareSize):
-                    for y in range(squareSize):
-                        if x + y <= squareSize - 2:
-                            self.grid_S[l][x][y] = False
-
-            # Then set the middle layer to false
-            self.grid_S[1][:][:] = False
-
-            # Also set the sulfur at (0,0), (squareSize, 0) and (0, squareSize) to be false, as they shouldn't be there
-            for i in range(self.grid_S.shape[0]):
-                self.grid_S[i][0,0] = False
-
-            # Create Mo grid
-            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-
-            # Then put everything above a line to False
-            for x in range(squareSize-1):
-                for y in range(squareSize-1):
-                    if x + y <= squareSize - 3:
-                        self.grid_Mo[x][y] = False
-            
-        elif structType == "Triangle 50% S-Edges":
-            # Create S grid
-            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
-
-            # Now put everything above a line to False
-            for l in range(self.grid_S.shape[0]):
-                for x in range(squareSize):
-                    for y in range(squareSize):
-                        if x + y <= squareSize - 2:
-                            self.grid_S[l][x][y] = False
-
-            # Now set the middle layer to false
-            self.grid_S[1][:][:] = False
-
-            # Then set the outer part of the middle layer to True
-            for x in range(squareSize):
-                for y in range(squareSize):
-                    if x + y == squareSize - 1:
-                        self.grid_S[1][x][y] = True
-
-            self.grid_S[1][-1,:] = True
-            self.grid_S[1][:,-1] = True
-
-            # Now do the opposite for the upper and lower layer
-            for l in range(self.grid_S.shape[0]):
-                for x in range(squareSize):
-                    for y in range(squareSize):
-                        if x + y == squareSize - 1 and (l == 0 or l == 2):
-                            self.grid_S[l][x][y] = False
-
-            for l in (0, 2):
-                self.grid_S[l][-1,:] = False
-                self.grid_S[l][:,-1] = False
-
-            # Also set the sulfur at (0,0) to be false, as it shouldn't be there
-            for l in range(self.grid_S.shape[0]):
-                self.grid_S[l][0][0] = False
-
-            # Create Mo grid
-            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-
-            # Then put everything above a line to False
-            for x in range(squareSize-1):
-                for y in range(squareSize-1):
-                    if x + y <= squareSize - 3:
-                        self.grid_Mo[x][y] = False
 
         return
     
@@ -393,7 +242,8 @@ class KMC:
 
     def reset(self):
         """Creates and updates the current grids with undamaged ones using the size of the current grids. Also resets the total simulation time."""
-        self.create_system(self.squareSize, self.structType)
+        squareSize = self.grid_S.shape[2]
+        self.create_system(squareSize)
         self.total_sim_time = 0
 
         return
@@ -699,3 +549,4 @@ class KMC:
         """Clears the missing TD list."""
         self.missingTDs = []
         return
+
