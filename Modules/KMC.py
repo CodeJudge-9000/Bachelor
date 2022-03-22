@@ -16,7 +16,6 @@ class KMC:
         self.create_system(squareSize, structType = structType)
 
         # Define a bunch of internal parameters
-        self.structType = structType
         self.dose = electron_dose # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
         self.fingerPrint = fingerPrint
@@ -139,7 +138,6 @@ class KMC:
             
         elif structType == "50% Square":
             # Create S grid
-            squareSize = 5
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
             # Set the middle-layer to be false, except for the edges
@@ -160,7 +158,6 @@ class KMC:
         
         elif structType == "Mix Square-v1":
             # Create S grid
-            squareSize = 5
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
             # Set the middle-layer to be false, except for one edge
@@ -181,7 +178,6 @@ class KMC:
             
         elif structType == "Mix Square-v2":
             # Create S grid
-            squareSize = 5
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
             # Set the middle-layer to be false, except for two edges
@@ -202,7 +198,6 @@ class KMC:
         
         elif structType == "Mix Square-v3":
             # Create S grid
-            squareSize = 5
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
             # Set the middle-layer to be false, except for two edges
@@ -223,7 +218,6 @@ class KMC:
         
         elif structType == "Mix Square-v4":
             # Create S grid
-            squareSize = 5
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
             # Set the middle-layer to be false, except for two edges
