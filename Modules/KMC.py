@@ -3,7 +3,7 @@
 import FingerPrints
 from atomic_annihilator import *
 from ase import Atoms
-from ase.io.Trajectory import TrajectoryWriter
+from ase.io.trajectory import TrajectoryWriter
 import numpy as np
 import math as m
 from random import uniform
@@ -11,15 +11,16 @@ from random import randint
 
 
 class KMC:
-    def __init__(self, squareSize, TDlib, fingerPrint, kinetic_E, electron_dose):
+    def __init__(self, squareSize, structType, TDlib, fingerPrint, kinetic_E, electron_dose):
         # First create the system
-        self.create_system(squareSize)
+        self.create_system(squareSize, structType = structType)
 
         # Define a bunch of internal parameters
+        self.structType = structType
         self.dose = electron_dose # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
+        self.fingerPrint = fingerPrint
         self.TDlib = TDlib # TD energies in eV
-        self.fingerPrint = fingerPrint # Name of the fingerPrint used
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV) <- Units are *important*
         self.gridStack = np.array([np.array([self.grid_S, self.grid_Mo, self.total_sim_time], dtype=object)]) # np array used to store the two grids, as well as the 
         self.S_init = np.sum(self.grid_S[-1])
@@ -83,6 +84,7 @@ class KMC:
 
         # Get the fingerprint for the atom
         fingerPrint = self.get_fingerPrint(a1, a2)
+        #print(f"fingerPrint: {fingerPrint}")
 
         if fingerPrint == None:
             # Return 1 if there is no atom at (2, a1, a2)
@@ -94,12 +96,15 @@ class KMC:
         # Figure out how much energy is transferred
         E_T = self.get_transferred_energy(b, "S")
 
+        #print(f"E_T: {E_T}")
+        #print(f"self.energy_cutoff_S: {self.energy_cutoff_S}")
         if E_T > self.energy_cutoff_S:
             E_T = self.energy_cutoff_S
         
         # Now check whether the transferred energy is higher than the TD value for this atom
         TD = self.get_TD(fingerPrint)
 
+        #print(f"TD: {TD}")
         if TD == None:
             # Return 1 if there is no corresponding TD value
             return 1
@@ -121,15 +126,121 @@ class KMC:
     
 
 
-    def create_system(self, squareSize):
-        # Create S grid
-        self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
-        self.grid_S[1][:][:] = False # Set the middle-layer to be false
-        for i in range(self.grid_S.shape[0]):
-            self.grid_S[i][0][0] = False # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+    def create_system(self, squareSize, structType):
+        if structType == "100% Square":
+            # Create S grid
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+            self.grid_S[1][:][:] = False # Set the middle-layer to be false
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
 
-        # Create Mo grid
-        self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+            
+        elif structType == "50% Square":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for the edges
+            self.grid_S[1][1:squareSize-1,1:squareSize-1] = False
+
+            # Set the edges of the top and bottom layer to be false
+            self.grid_S[0] = False
+            self.grid_S[0][1:-1,1:-1] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:-1,1:-1] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        
+        elif structType == "Mix Square-v1":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for one edge
+            self.grid_S[1][1:squareSize,0:squareSize] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,0:squareSize] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,0:squareSize] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+            
+        elif structType == "Mix Square-v2":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for two edges
+            self.grid_S[1][1:squareSize,1:squareSize] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,1:squareSize] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,1:squareSize] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        
+        elif structType == "Mix Square-v3":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for two edges
+            self.grid_S[1][1:squareSize,0:squareSize-1] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,0:squareSize-1] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,0:squareSize-1] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        
+        elif structType == "Mix Square-v4":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for two edges
+            self.grid_S[1][1:squareSize,1:squareSize-1] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,1:squareSize-1] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,1:squareSize-1] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
         return
     
@@ -241,7 +352,7 @@ class KMC:
             m_n = self.m_Mo
 
         # Then use the momentum to calculate the energy
-        E_T = 6.241509125*10^18*p_trans**2/(2*m_n)
+        E_T = 6.241509125*10**18*p_trans**2/(2*m_n)
 
         return E_T
 
@@ -254,6 +365,8 @@ class KMC:
 
         # Determine the rate constant
         rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb)**2 * numberS # 1/s
+        #print("b_cutoff: ",self.get_b_cutoff(atomSymb))
+        #print("rate_constant: ", rate_constant)
 
         return rate_constant
 
@@ -264,7 +377,7 @@ class KMC:
     
     def get_electron_velocity(self):
         """Calculates and returns the classical electron velocity in m/s"""
-        v_rest = m.sqrt(2*self.electronKin/(self.m_e*6.241509125*10**(-18)))
+        v_rest = m.sqrt(2*self.electronKin*1.602176621*10**(-19)/(self.m_e))
 
         return v_rest
     
@@ -273,6 +386,16 @@ class KMC:
         v = self.get_electron_velocity()
         m_r = (self.m_e) / (1 - (v/self.speed_of_light_si)**2)
         return m_r
+    
+    def get_reduced_mass(self, atomSymb):
+        """Calculates and returns the reduced mass of the system"""
+        if atomSymb == "S":
+            m_n = self.m_S
+        elif atomSymb == "Mo":
+            m_n = self.m_Mo
+        
+        reduced_mass = self.m_e * m_n / (self.m_e + m_n)
+        return reduced_mass
     
     def get_scattering_cross_section(self):
         """Calculates and returns the current scattering cross-section for the bottom layer of the S-grid"""
@@ -294,7 +417,7 @@ class KMC:
             Q = 42
 
         # Now calculate a
-        a = (v_0**2 * self.m_e) / (self.coulomb_k_si * (-1) * Q * (self.m_e/m_n + 1)**3)
+        a = (v_0**2 * self.m_e) / (self.coulomb_k_si * (1) * Q * (self.m_e/m_n + 1)**3)
 
         return a
     
@@ -302,6 +425,7 @@ class KMC:
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
         E_min = self.TDlib["Td"].min() * 1.05
+        #print(f"E_min: {E_min}")
 
         # Now get the mass of the atomic nucleus of the corresponding atom
         # The following should (for maximum compatibility) by some library but for now it's just some if-else statements
@@ -309,19 +433,24 @@ class KMC:
             m_n = self.m_S
         elif atomSymb == "Mo":
             m_n = self.m_Mo
+        #print(f"m_n: {m_n}")
 
         # Get the relativistic mass of our electrons, as well as their velocity
         m_r = self.get_relativistic_electron_mass()
         v_0 = self.get_electron_velocity()
+        #print(f"m_r: {m_r}")
+        #print(f"v_0: {v_0}")
 
         # Get 'a'
         a = self.a(atomSymb)
+        #print(f"a: {a}")
 
         # Calculate the cutoff value for b
-        b_cutoff = 10**(-10)/a * m.sqrt((2*m_r*v_0)**2 / (6.241509125*10**(-18)*E_min*2*m_n))
+        b_cutoff = 1/a * m.sqrt((2*m_r*v_0)**2 / (6.241509125*10**(-18)*E_min*2*m_n))
 
         # Convert it to Å and return it
-        b_cutoff = b_cutoff * 10**(-10)
+        b_cutoff = b_cutoff * 10**(10)
+        print(b_cutoff)
 
         return b_cutoff
 
@@ -340,7 +469,7 @@ class KMC:
     def time_step(self):
         """Increases the total sim time as well as the current sim time using the total rate constant for the system"""
         # Calculate how long passed
-        timePassed = -1 * m.log(uniform(0.0000000001, 1.0))/self.rate_constant # Change in seconds
+        timePassed = -1 * m.log(uniform(0.0000000001, 1.0))/self.rate_constant_S # Change in seconds
 
         # Total time ran update
         self.total_sim_time += timePassed
@@ -357,18 +486,21 @@ class KMC:
         if self.grid_S[-1][a1][a2] == False:
             return None
 
+        #print(f"(a1, a2): ({a1}, {a2})")
+        
         # Now determine the amount of Mo neighbors (and save the coordinates in a list)
         # Given the coordinates of a S atom, the Mo neighbor would be at:
         #   (a1 - 1, a2 - 1), (a1 - 1, a2), (a1, a2 - 1)
         toReview = [(a1 - 1, a2 - 1, 0)] # a1 and a2 will never be 0 at the same time for our square molecule, and the corner at max coords is no issue
-        if a1 != 0 and a2 != len(self.grid_S):
-            toReview.append((a1 - 1, a2, 1))
-        if a2 != 0 and a1 != len(self.grid_S):
-            toReview.append((a1, a2 - 1, 2))
+        if a1 != 0 and a2 != len(self.grid_Mo):
+            toReview.append((a1 - 1, a2, 1)) # The second would be to the left of the first one
+        if a2 != 0 and a1 != len(self.grid_Mo):
+            toReview.append((a1, a2 - 1, 2)) # The third would be downwards from the first one
         
         # Now check how many Mo atoms are at the positions, and how many common neighbors there are
         nMo = 0
         nS_list = []
+        #print("toReview: ",toReview)
         for e in toReview:
             nS = 0
             if self.grid_Mo[e[0],e[1]]:
@@ -378,24 +510,28 @@ class KMC:
                 nS += self.grid_S[-1][e[0]][e[1]+1]
             
             nS_list.append(nS)
-        nS_list.sort()
-        nS_list.append(0) # The fingerprint allows for up to 4 NN Mo atoms, but in our case there will at most be 3, so this is a quick fix
+        nS_list.sort(reverse = True)
+        
+        while len(nS_list) < 4:
+            nS_list.append(0) # The fingerprint allows for up to 4 NN Mo atoms, but in our case there will at most be 3, so this is a quick fix
 
         # Now create the actual fingerprint
-        fingerPrint = [nMo].append(nS_list)
+        #print(nS_list)
+        fingerPrint = [nMo] + nS_list
+        #print(fingerPrint)
 
         return fingerPrint
     
 
-    def get_TD(self, a1, a2):
+    def get_TD(self, finger):
         """
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
         # First get the fingerprint for the corresponding indices
-        finger = self.get_fingerPrint(a1, a2)
+        #finger = self.get_fingerPrint(a1, a2)
 
         # Now run through the pandas dataframe, and check if there are any corresponding value
-        if len(self.TDlib[self.TDlib["finger"] == str(finger)]) == 0:
+        if len(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]) == 0:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
             if finger not in self.missingTDs:
                 self.missingTDs.append(finger)
@@ -403,7 +539,7 @@ class KMC:
         
         # If there are at least one corresponding TD value, take the average of all the values and return the value
         else:
-            return self.TDlib[self.TDlib["finger"] == str(finger)].mean()["Td"]
+            return self.TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
     
     
 
