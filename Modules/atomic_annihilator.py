@@ -8,12 +8,12 @@ import numpy as np
 
 ### CALCULATOR ###
 localcalc = GPAW(mode='lcao',
-            basis = 'szp(dzp)',
+            basis = 'dzp',
             xc='PBE',
             hund = False,
             #eigensolver = ETDM(searchdir_algo={'name': 'l-bfgs-p', 'memory': 10}),
             occupations={'name': 'fermi-dirac', 'width': 0.05},
-            mixer=MixerDif(0.02, 5, 100),
+            mixer=Mixer(0.02, 5, 100),
             #nbands=16,
             symmetry='off' # We are moving stuff. Set this to 'off'
             #parallel={'domain': (5,2,2)}
