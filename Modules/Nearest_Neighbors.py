@@ -125,19 +125,33 @@ def NNs_Cylinder(system, ind, shape = "wide", atom_type = "*Insert Symbol Here*"
     
     return n_neighbors, positions, distList
 
+
 def id_array(NN_cyl_output):
+    """
+    This function is a helper function to pack out the output of the NN_cylinder and return it in a simple list type
+    """
     idArray = []
     for i in range(0,NN_cyl_output[0]):
         idArray.append(NN_cyl_output[2][i]['index'])
+
     return idArray
     
+
 def get_oposite_indeces_S(sys, ind):
+    """
+    A function to get the circle of neigbohrs on the other side of the sample
+    """
+
+    # Recieving the opposite neigbbohrs index
     cylNeigbohrsTall = NNs_Cylinder(system = sys, ind = ind, shape = "tall", atom_type = "S")
     cylNeigbohrsIndecesTall = cylNeigbohrsTall[2][0]['index']
-    cylNeigbohrs = NNs_Cylinder(system = sys, ind = cylNeigbohrsIndecesTall, shape = "wide", atom_type = "S")
-    cylNeigbohrsIndeces = id_array(cylNeigbohrs)
+
+    # Getting the neighbors around the opposite site neigbohrs indeces
+    cylNeigbohrsIndeces = id_array(NNs_Cylinder(system = sys, ind = cylNeigbohrsIndecesTall, shape = "wide", atom_type = "S"))
     cylNeigbohrsIndeces.append(cylNeigbohrsIndecesTall)
-    return(cylNeigbohrsIndeces)
+
+    return cylNeigbohrsIndeces
+
 
 def get_removed_indeces(sys, theIndex):
 
