@@ -1,5 +1,4 @@
 
-
 # Initialization
 import FingerPrints
 from atomic_annihilator import *
@@ -17,6 +16,7 @@ class KMC:
         self.create_system(squareSize, structType = structType)
 
         # Define a bunch of internal parameters
+        self.structType = structType
         self.dose = electron_dose # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
         self.fingerPrint = fingerPrint
@@ -136,6 +136,7 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+            
         elif structType == "50% Square":
             # Create S grid
             squareSize = 5
@@ -156,7 +157,90 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        
+        elif structType == "Mix Square-v1":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
+            # Set the middle-layer to be false, except for one edge
+            self.grid_S[1][1:squareSize,0:squareSize] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,0:squareSize] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,0:squareSize] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+            
+        elif structType == "Mix Square-v2":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for two edges
+            self.grid_S[1][1:squareSize,1:squareSize] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,1:squareSize] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,1:squareSize] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        
+        elif structType == "Mix Square-v3":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for two edges
+            self.grid_S[1][1:squareSize,0:squareSize-1] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,0:squareSize-1] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,0:squareSize-1] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
+        
+        elif structType == "Mix Square-v4":
+            # Create S grid
+            squareSize = 5
+            self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
+
+            # Set the middle-layer to be false, except for two edges
+            self.grid_S[1][1:squareSize,1:squareSize-1] = False
+
+            # Set the edges of the top and bottom layer to be false for one edge
+            self.grid_S[0] = False
+            self.grid_S[0][1:squareSize,1:squareSize-1] = True
+            self.grid_S[-1] = False
+            self.grid_S[-1][1:squareSize,1:squareSize-1] = True
+
+            # Also set the sulfur at (0,0) to be false, as it is not actually there in a square structure
+            for i in range(self.grid_S.shape[0]):
+                self.grid_S[i][0][0] = False
+
+            # Create Mo grid
+            self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
         return
     
