@@ -126,7 +126,9 @@ class KMC:
 
 
     def create_system(self, squareSize, structType):
-        if structType == "Square 100%":
+        structType = structType.lower()
+
+        if structType == "square 100":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
             self.grid_S[1][:][:] = False # Set the middle-layer to be false
@@ -136,7 +138,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
-        elif structType == "Square 50%":
+        elif structType == "square 50":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -156,7 +158,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
         
-        elif structType == "Square Mix-v1":
+        elif structType == "square mix-v1":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -176,7 +178,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
-        elif structType == "Square Mix-v2":
+        elif structType == "square mix-v2":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -196,7 +198,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
-        elif structType == "Square Mix-v3":
+        elif structType == "square mix-v3":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -216,7 +218,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
-        elif structType == "Square Mix-v4":
+        elif structType == "square mix-v4":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -236,7 +238,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
 
-        elif structType == "Triangle 100% Mo-Edges":
+        elif structType == "triangle 100 mo-edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -263,7 +265,7 @@ class KMC:
                     if x + y >= squareSize - 1:
                         self.grid_Mo[x][y] = False
         
-        elif structType == "Triangle 50% Mo-Edges":
+        elif structType == "triangle 50 mo-edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -311,7 +313,7 @@ class KMC:
                         self.grid_Mo[x][y] = False
             
             
-        elif structType == "Triangle 100% S-Edges":
+        elif structType == "triangle 100 s-edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -338,7 +340,7 @@ class KMC:
                     if x + y <= squareSize - 3:
                         self.grid_Mo[x][y] = False
             
-        elif structType == "Triangle 50% S-Edges":
+        elif structType == "Triangle 50 S-Edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -384,6 +386,9 @@ class KMC:
                 for y in range(squareSize-1):
                     if x + y <= squareSize - 3:
                         self.grid_Mo[x][y] = False
+            
+        else:
+            raise Exception("Structure type not recognized!")
 
         return
     
