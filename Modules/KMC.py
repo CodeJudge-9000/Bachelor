@@ -340,7 +340,7 @@ class KMC:
                     if x + y <= squareSize - 3:
                         self.grid_Mo[x][y] = False
             
-        elif structType == "Triangle 50 S-Edges":
+        elif structType == "triangle 50 s-edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
