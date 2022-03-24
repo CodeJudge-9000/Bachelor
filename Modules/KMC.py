@@ -1,7 +1,5 @@
 
 # Initialization
-import FingerPrints
-from atomic_annihilator import *
 from ase import Atoms
 from ase.io.trajectory import TrajectoryWriter
 import numpy as np
@@ -11,13 +9,13 @@ from random import randint
 
 
 class KMC:
-    def __init__(self, squareSize, structType, TDlib, fingerPrint, kinetic_E, electron_dose):
+    def __init__(self, gridSize, structureType, TDlib, fingerPrint, kinetic_E, electron_dose):
         # First create the system
-        self.create_system(squareSize, structType = structType)
+        self.create_system(gridSize, structureType)
 
         # Define a bunch of internal parameters
-        self.squareSize = squareSize
-        self.structType = structType
+        self.squareSize = gridSize
+        self.structType = structureType
         self.dose = electron_dose # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
         self.fingerPrint = fingerPrint
@@ -128,7 +126,7 @@ class KMC:
 
 
     def create_system(self, squareSize, structType):
-        if structType == "100% Square":
+        if structType == "Square 100%":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
             self.grid_S[1][:][:] = False # Set the middle-layer to be false
@@ -137,8 +135,8 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-            
-        elif structType == "50% Square":
+
+        elif structType == "Square 50%":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -158,7 +156,7 @@ class KMC:
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
         
-        elif structType == "Mix Square-v1":
+        elif structType == "Square Mix-v1":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -177,8 +175,8 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-            
-        elif structType == "Mix Square-v2":
+
+        elif structType == "Square Mix-v2":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -197,8 +195,8 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-        
-        elif structType == "Mix Square-v3":
+
+        elif structType == "Square Mix-v3":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -217,8 +215,8 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-        
-        elif structType == "Mix Square-v4":
+
+        elif structType == "Square Mix-v4":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
 
@@ -237,7 +235,7 @@ class KMC:
 
             # Create Mo grid
             self.grid_Mo = np.ones((squareSize-1, squareSize-1), dtype = bool) # This one only contains a single layer of Mo atoms, and as such it is simply (x, y)
-        
+
         elif structType == "Triangle 100% Mo-Edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
@@ -699,3 +697,4 @@ class KMC:
         """Clears the missing TD list."""
         self.missingTDs = []
         return
+
