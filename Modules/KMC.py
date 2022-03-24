@@ -29,7 +29,7 @@ class KMC:
         self.m_S = 32.06 * 1.660540200*10**(-27) # Sulfur mass in kg
         self.m_Mo = 95.95 * 1.660540200*10**(-27) # Molybdenum mass in kg
         self.speed_of_light_si = 2.998*10**8 # 'c' in m/s
-        self.coulomb_k_si = 8.9875517923*10**9 # The coulomb constant in SI units
+        self.coulomb_k_si = 2.307077515*10^(-28) # The coulomb constant times e^2, given in SI units (kg*m^3)/(s^2)
 
         # Calculate some of the constant values of the system
         self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
@@ -490,7 +490,7 @@ class KMC:
     def get_transferred_energy(self, b, atomSymb):
         """Calculates and returns the transferred energy in eV, given the b-value in Å"""
         # First calculate the momentum
-        p_trans = (2*self.relativistic_electron_mass * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
+        p_trans = (2*self.get_reduced_mass() * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
 
         # Then find other required parameters
         if atomSymb == "S":
@@ -558,10 +558,10 @@ class KMC:
 
         if atomSymb == "S":
             m_n = self.m_S
-            Q = 16
+            Q = 8
         elif atomSymb == "Mo":
             m_n = self.m_Mo
-            Q = 42
+            Q = 21
 
         # Now calculate a
         a = (v_0**2 * self.m_e) / (self.coulomb_k_si * (1) * Q * (self.m_e/m_n + 1)**3)
@@ -583,17 +583,14 @@ class KMC:
         #print(f"m_n: {m_n}")
 
         # Get the relativistic mass of our electrons, as well as their velocity
-        m_r = self.get_relativistic_electron_mass()
-        v_0 = self.get_electron_velocity()
-        #print(f"m_r: {m_r}")
-        #print(f"v_0: {v_0}")
+        m_r = self.get_reduced_mass(atomSymb)
+        v_0 = self.get_relativistic_electron_velocity()
 
         # Get 'a'
         a = self.a(atomSymb)
-        #print(f"a: {a}")
 
         # Calculate the cutoff value for b
-        b_cutoff = 1/a * m.sqrt((2*m_r*v_0)**2 / (6.241509125*10**(-18)*E_min*2*m_n))
+        b_cutoff = (1/a) * m.sqrt((2*m_r*v_0)**2 / (E_min*1.602176621*10**(-19)*2*m_n*1.660540200*10**(-27)) - 1)
 
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
