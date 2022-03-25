@@ -64,7 +64,6 @@ class KMC:
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
-
     def run(self, runTime):
         self.current_sim_time = 0
         
@@ -75,7 +74,6 @@ class KMC:
         
         return
     
-
     def simulate_electron(self): # Fix this thing
         # Choose which electron to interact with
         sideLen = len(self.grid_S[-1])
@@ -123,8 +121,6 @@ class KMC:
 
         return 1
     
-
-
     def create_system(self, squareSize, structType):
         structType = structType.lower()
 
@@ -312,7 +308,6 @@ class KMC:
                     if x + y >= squareSize - 1:
                         self.grid_Mo[x][y] = False
             
-            
         elif structType == "triangle 100 s-edges":
             # Create S grid
             self.grid_S = np.ones((3, squareSize, squareSize), dtype = bool) # First comes layer, then x and then y. So: (l, x, y)
@@ -392,15 +387,12 @@ class KMC:
 
         return
     
-
-
     def reset(self):
         """Creates and updates the current grids with undamaged ones using the size of the current grids. Also resets the total simulation time."""
         self.create_system(self.squareSize, self.structType)
         self.total_sim_time = 0
 
         return
-
 
     def current_grid_to_atoms(self):
         """Converts the current grids into an ase atoms object, and returns it"""
@@ -451,8 +443,6 @@ class KMC:
         
         return system
     
-
-
     def gridStack_TrajectoryWriter(self, filename):
         """Converts the current gridStack to atoms objects and writes them to a .traj file"""
         writer = TrajectoryWriter(f"{filename}.traj", "w")
@@ -486,7 +476,6 @@ class KMC:
 
         return
 
-
     def get_transferred_energy(self, b, atomSymb):
         """Calculates and returns the transferred energy in eV, given the b-value in Å"""
         # First calculate the momentum
@@ -502,8 +491,6 @@ class KMC:
         E_T = 6.241509125*10**18*p_trans**2/(2*m_n)
 
         return E_T
-
-
 
     def get_rate_constant(self, atomSymb):
         """Calculates and returns the rate constant of the whole system for ONE type of atom in 1/s"""
@@ -609,7 +596,6 @@ class KMC:
 
         return E_max
 
-
     def time_step(self):
         """Increases the total sim time as well as the current sim time using the total rate constant for the system"""
         # Calculate how long passed
@@ -622,7 +608,6 @@ class KMC:
         self.current_sim_time += timePassed
 
         return
-
 
     def get_fingerPrint(self, a1, a2):
         """Calculates and returns the fingerprint of the S atom on the last layer of the S grid, with the coordinates (2, a1, a2)"""
@@ -666,7 +651,6 @@ class KMC:
 
         return fingerPrint
     
-
     def get_TD(self, finger):
         """
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
@@ -685,16 +669,12 @@ class KMC:
         else:
             return self.TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
     
-    
-
     def get_missing_TDs(self):
         """
         Returns a list of all the fingerprints missing a TD value.
         """
         return self.missingTDs
     
-
-
     def clear_missing_TDs(self):
         """Clears the missing TD list."""
         self.missingTDs = []
