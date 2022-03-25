@@ -39,7 +39,7 @@ def get_raw_data_frame(directory = './data') -> pd.DataFrame:
     dataArray2 = dataArray2.iloc[: , 1:]
     df = dataArray2
     df = df.reset_index()
-    return(df)
+    return df
 
 
 def fill_missing(df) -> pd.DataFrame:
@@ -126,7 +126,7 @@ def removed_categorize(df) -> pd.DataFrame:
      - `df` [pd.DataFrame]: with the added [D,S,D,...] vector
     """
 
-    # Tilføj så vi ser om de fjernede er same side eller opposite size
+    # A loop for getting the coordinate of all the removed atoms, so we can check them later on
     zcoordMovedAtom = []
     zzListen = []
     for g in range(0,len(df)):
@@ -154,7 +154,7 @@ def removed_categorize(df) -> pd.DataFrame:
 
             zzListen.append(zListen)   
 
-    # Section for seeing if the removed are the same or different side
+    # Section for assigning if the removed are the same or different side
     categoryVector = []
     for i, zvec in enumerate(zzListen):
         categoryList = []
@@ -174,14 +174,27 @@ def removed_categorize(df) -> pd.DataFrame:
         categoryVector.append(categoryList)    
 
     df['neigbohrs'] = categoryVector
-    return(df)
+    return df
 
 
-def finger_print_search(df, fingerPrint = []):
-    ## Kigger i denne section på fingerprints som er lignene
+def finger_print_search(df, fingerPrint = []) -> pd.DataFrame:
+    """ finger_print_search - scrolls through all the instances in the pandas dataFrame 
+
+    Parameters:
+    -----------
+     - `df` [pd.DataFrame]: the dataframe we want to search for
+     - `fingerPrint` [list]: the fingerprint we want to search for
+    
+    Returns:
+    --------
+     - `df2` [pd.DataFrame]: A dataframe with the entries that match the fingerPrint
+    """
+
+    # Getting the indeces where the shortFinger match
     ins = []
     for i in range(0,len(df)):
-        ins.append( df['shortFinger'][i] == fingerPrint)
+        ins.append(df['shortFinger'][i] == fingerPrint)
+
 
     df2 = df[ins]
     try:
@@ -189,7 +202,7 @@ def finger_print_search(df, fingerPrint = []):
     except:
         pass
     df2 = df2.reset_index() 
-    return(df2)
+    return df2
 
 
 # Similar system, similar fingerprint  ## SORTING SO WE ONLY See the 6x6 results
@@ -200,7 +213,7 @@ def remove_small_system(df2):
     except:
         pass
     df3 = df3.reset_index()
-    return(df3)
+    return df3
 
 
 def get_trajectories_from_table(df):
@@ -215,14 +228,14 @@ def get_trajectories_from_table(df):
         Trajs.append(T)
         os.chdir("..")
     
-    return(Trajs)
+    return Trajs
 
 
 def sort_out_id(df, index):
     viewTable = df[df['original_id'] == index].sort_values('removedList', ascending=False)
     viewTable = viewTable.drop(['level_0'], axis = 1)
     viewTable = viewTable.reset_index()
-    return(viewTable)
+    return viewTable
 
 def nn_search(df, fingerPrint = []):
     ## Kigger i denne section på fingerprints som er lignene
@@ -236,7 +249,7 @@ def nn_search(df, fingerPrint = []):
     except:
         pass
     df2 = df2.reset_index() 
-    return(df2)
+    return df2
 
 def get_same_siders(df):
     df1 =  nn_search(df, ['S'])
@@ -248,5 +261,5 @@ def get_same_siders(df):
     except:
         pass
     dff = dff.reset_index()
-    return(dff)
+    return dff
     
