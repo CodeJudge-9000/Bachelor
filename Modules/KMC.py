@@ -557,6 +557,10 @@ class KMC:
 
         return a
     
+    def get_p_cutoff(self, atomSymb):
+        p = self.get_b_cutoff(atomSymb)**2
+        return p
+
     def get_b_cutoff(self, atomSymb):
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
