@@ -80,12 +80,14 @@ class KMC:
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
 
         # Get the fingerprint for the atom
-        fingerPrint = self.get_fingerPrint(a1, a2)
-        #print(f"fingerPrint: {fingerPrint}")
-
+        # First in the bottom layer
+        fingerPrint = self.get_fingerPrint(2, a1, a2)
         if fingerPrint == None:
-            # Return 1 if there is no atom at (2, a1, a2)
-            return 1
+
+            # Then if there is no atom in the bottom layer, check if there is one in the middle layer
+            fingerPrint = self.get_fingerPrint(1, a1, a2)
+            if fingerPrint == None:
+                return 1
 
         # Figure out the interaction distance (b-value) of the electron and atom
         b = m.sqrt(uniform(0, self.b_cutoff_S**2))
@@ -609,14 +611,37 @@ class KMC:
 
         return
 
-    def get_fingerPrint(self, a1, a2):
-        """Calculates and returns the fingerprint of the S atom on the last layer of the S grid, with the coordinates (2, a1, a2)"""
-        # First check if there is actually an atom at the given coordinates
-        if self.grid_S[-1][a1][a2] == False:
+    def get_fingerPrint(self, layer, a1, a2):
+        """Calculates and returns the fingerprint of the S atom on the given layer of the S grid, with the coordinates (layer, a1, a2)"""
+        # First check if the layer is valid, and if there is actually an atom at the given coordinates
+        if layer not in [0, 1, 2]:
+            raise Exception(f"The layer {layer} is not a valid layer. Choose either 0, 1 or 2.")
+        if self.grid_S[layer][a1][a2] == False:
             return None
 
-        #print(f"(a1, a2): ({a1}, {a2})")
-        
+        # Get the opposite layer
+        if layer == 0:
+            otherLayer = 2
+        elif layer == 1:
+            otherLayer = None
+        elif layer == 2:
+            otherLayer = 0
+
+        # Get the amount of NN S atoms there are in the same layer
+        nS_NNs = 0
+        for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+            nS_NNs += self.grid_S[layer][e[0],e[1]]
+
+        # If we are in the middle layer (1) then we will need to count in the two other layers (using the same method as above)
+        if layer == 1:
+            for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+                nS_NNs += self.grid_S[0][e[0],e[1]]
+                nS_NNs += self.grid_S[2][e[0],e[1]]
+
+        # Otherwise, we need to look at the atom in the opposite layer, at the same coordinates
+        if layer == 0 or layer == 2:
+            nS_NNs += self.grid_S[otherLayer][a1][a2]
+
         # Now determine the amount of Mo neighbors (and save the coordinates in a list)
         # Given the coordinates of a S atom, the Mo neighbor would be at:
         #   (a1 - 1, a2 - 1), (a1 - 1, a2), (a1, a2 - 1)
@@ -634,9 +659,16 @@ class KMC:
             nS = 0
             if self.grid_Mo[e[0],e[1]]:
                 nMo += 1
-                nS += self.grid_S[-1][e[0]+1][e[1]]
-                nS += self.grid_S[-1][e[0]+1][e[1]+1]
-                nS += self.grid_S[-1][e[0]][e[1]+1]
+                
+                # For the middle layer
+                if layer == 1:
+                    raise NotImplementedError("Middle-layer atoms have yet to be implemented.")
+                
+                # For the top and bottom layer
+                else:
+                    nS += self.grid_S[layer][e[0]+1][e[1]]
+                    nS += self.grid_S[layer][e[0]][e[1]+1]
+                    nS += self.grid_S[otherLayer][e[0]+1][e[1]+1] # This is the same position as our atom, but in the opposite layer
             
             nS_list.append(nS)
         nS_list.sort(reverse = True)
@@ -645,9 +677,7 @@ class KMC:
             nS_list.append(0) # The fingerprint allows for up to 4 NN Mo atoms, but in our case there will at most be 3, so this is a quick fix
 
         # Now create the actual fingerprint
-        #print(nS_list)
-        fingerPrint = [nMo] + nS_list
-        #print(fingerPrint)
+        fingerPrint = [nMo] + [nS_NNs] + nS_list
 
         return fingerPrint
     
