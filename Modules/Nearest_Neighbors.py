@@ -133,7 +133,6 @@ def id_array(NN_cyl_output):
     idArray = []
     for i in range(0,NN_cyl_output[0]):
         idArray.append(NN_cyl_output[2][i]['index'])
-
     return idArray
     
 
@@ -184,8 +183,8 @@ def make_list_of_lists(indexList):
 
 
 def get_all_combs_3(system, index):
-    ids = get_removed_indeces(system, index)
-    
+    ids = sphere_indexes(system, index)
+     
     # make all possible combinations
     listOfLists3 = list()
     for i in ids:
@@ -199,7 +198,9 @@ def get_all_combs_3(system, index):
     return listOfLists3
 
 def get_all_combs_2(system, index):
-    ids = get_removed_indeces(system, index)
+ 
+    ids = sphere_indexes(system, index)
+    
     listOfLists2 = list()
     for i in ids:
         for j in ids:
@@ -211,7 +212,7 @@ def get_all_combs_2(system, index):
     return listOfLists2
                 
 def get_all_combs_1(system, index): 
-    ids = get_removed_indeces(system, index)
+    ids = sphere_indexes(system, index)
     listOfLists1 = list()
     for i in ids:
         listen = [i]
@@ -235,3 +236,15 @@ def get_all_combs_tot(system, index):
     listTot = list1 + list2 + list3
     return listTot
     
+def sphere_indexes(system, index):
+    sphereOut = NNs_Sphere(system = system, ind = index, atom_type = "S")
+    sphereOut = sphereOut[2]
+    sphereOutArray = list()
+    for element in sphereOut:
+        sphereOutArray.append(element['index'])
+    
+    return sphereOutArray
+
+
+
+
