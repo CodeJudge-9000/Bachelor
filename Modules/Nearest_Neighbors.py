@@ -144,12 +144,12 @@ def get_oposite_indeces_S(system, index):
     A function to get the circle of neigbohrs on the other side of the sample
     Parameters:
     -----------
-    system[ASE] -> the ASE system under consideration
-    index[int] -> the index that we consider
+     - `system` [ASE] -> the ASE system under consideration
+     - `index` [int] -> the index that we consider
 
     Returns:
     --------
-    cylNeigbohrsIndeces[list] -> an array of the indeces that have all the neighbohrs on the opposite side.
+     - `cylNeigbohrsIndeces` [list] -> an array of the indeces that have all the neighbohrs on the opposite side.
 
     """
 
@@ -170,12 +170,12 @@ def get_removed_indeces(system, theIndex) -> array[int]:
 
     Parameters:
     -----------
-    system[ASE-object]: the ASE system under consideration
-    theIndex[int]: the index of the atom we are considering
+     - `system` [ASE-object]: the ASE system under consideration
+     - `theIndex` [int]: the index of the atom we are considering
 
     Returns:
     --------
-    fullList[array]: The list of all the integers
+     - `fullList` [array]: The list of all the integers
     
     """
 
@@ -212,11 +212,11 @@ def make_list_of_lists(indexList) -> array[array]:
 
     Parameters:
     ----------
-    indexList[list]: The list we want expanded
+     - `indexList` [list]: The list we want expanded
 
     Returns:
     --------
-    listOfLists[array[array]]: see example
+     - `listOfLists`[array[array]]: see example
     '''
 
     listOfLists = []
@@ -233,12 +233,12 @@ def get_all_combs_3(system, index) -> array[array]:
 
     Parameters:
     -----------
-    system[ASE-object]: the ASE system under consideration
-    index[int]: the index of the atom we are considering
+     - `system` [ASE-object]: the ASE system under consideration
+     - `index` [int]: the index of the atom we are considering
 
     Returns:
     --------
-    listOfLists3[array[array]]: A list with all unqiue combinations of length 3 of the neigbhohrs removed
+     - `listOfLists3` [array[array]]: A list with all unqiue combinations of length 3 of the neigbhohrs removed
     """
 
     #Getting the neares neigbohrs and make all possible unqiue combinations
@@ -260,12 +260,12 @@ def get_all_combs_2(system, index) -> array[array]:
 
     Parameters:
     -----------
-    system[ASE-object]: the ASE system under consideration
-    index[int]: the index of the atom we are considering
+     - `system` [ASE-object]: the ASE system under consideration
+     - `index` [int]: the index of the atom we are considering
 
     Returns:
     --------
-    listOfLists2[array[array]]: A list with all unqiue combinations of length 2 of the neigbhohrs removed
+    - `listOfLists2` [array[array]]: A list with all unqiue combinations of length 2 of the neigbhohrs removed
     """
 
     #Getting the neares neigbohrs and make all possible unqiue combinations
@@ -286,12 +286,12 @@ def get_all_combs_1(system, index) -> array[array]:
 
     Parameters:
     -----------
-    system[ASE-object]: the ASE system under consideration
-    index[int]: the index of the atom we are considering
+     - `system` [ASE-object]: the ASE system under consideration
+     - `index` [int]: the index of the atom we are considering
 
     Returns:
     --------
-    listOfLists1[array[array]]: A list with all unqiue combinations of length 1 of the neigbhohrs removed
+     - `listOfLists1` [array[array]]: A list with all unqiue combinations of length 1 of the neigbhohrs removed
     """
     
     #Getting the neares neigbohrs and make all possible unqiue combinations
@@ -319,17 +319,32 @@ def make_unique(listOfLists):
     return uniqueList
 
 def get_all_combs_tot(system, index):
-    """ get_all_combs_tot - 
-    
+    """ get_all_combs_tot - takes a system and the index of the atom we consider and makes a List containing a list of
+    all the atoms we can remove of the combinations of 1, 2, 3 removals
+
+    Parameters:
+    -----------
+     - `system` [ASE-object]: the ASE system under consideration
+     - `index` [int]: the index of the atom we are considering
+
+    Returns:
+    --------
+     - `listTot` [array[array]]: A list with all unqiue combinations of length 1, 2 and 3 neighbors to be removed
     """
+
+    # collecting lists and combine them
     list1 = get_all_combs_1(system, index)
     list2 = get_all_combs_2(system, index)
     list3 = get_all_combs_3(system, index)
     listTot = list1 + list2 + list3
     return listTot
     
-def sphere_indexes(system, index):
-    sphereOut = NNs_Sphere(system = system, ind = index, atom_type = "S")
+def sphere_indexes(system, index) -> list:
+    """ sphere_indexes - A quick helper function to get out the nearest neighbohrs of the spheres indexes
+    it is like calling a NNs_Sphere but more simple
+    """
+
+    sphereOut = NNs_Sphere(system, index, "S")
     sphereOut = sphereOut[2]
     sphereOutArray = list()
     for element in sphereOut:
