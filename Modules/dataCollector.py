@@ -104,7 +104,7 @@ def fill_missing(df):
         df['Frames'] = lens
                 
         return(df)
-    
+        
 def removed_categorize(df):
         # Tilføj så vi ser om de fjernede er same side eller opposite size
     zcoordMovedAtom = []

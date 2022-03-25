@@ -9,13 +9,16 @@ A package for finding matches to missing fingerprints encountered when doing the
 def find_finger_print_match_simple(index, struct, fingerPrint):
     """
     A function that tries to find a combination of indexes to remove to gain the simple fingerprint one searches for
+    
     Input:
-    index [Int] -> the atom one wants to move
-    struct [ASE] -> The system we consider
-    fingerPrint [list] -> A fingerprint list of the type (Simple Finger)
+    ------
+    - `index` [Int] -> the atom one wants to move
+    - `struct` [ASE] -> The system we consider
+    - `fingerPrint` [list] -> A fingerprint list of the type (Simple Finger)
 
     Output:
-    correspondingList [list] -> The list with the indexes we should remove
+    -------
+     - `correspondingList` [list] -> The list with the indexes we should remove
     The removalist, that gives the fingerprint
     """
     
@@ -51,13 +54,16 @@ def find_finger_print_match_simple(index, struct, fingerPrint):
 def find_finger_print_match_short_common(index, struct, fingerPrint):
     """
     A function that tries to find a combination of indexes to remove to gain the short common fingerprint one searches for
+   
     Input:
-    index [Int] -> the atom one wants to move
-    struct [ASE] -> The system we consider
-    fingerPrint [list] -> A fingerprint list of the type (short common)
+    ------
+     - `index` [Int] -> the atom one wants to move
+     - `struct` [ASE] -> The system we consider
+     - `fingerPrint` [list] -> A fingerprint list of the type (short common)
 
     Output:
-    correspondingList [list] -> The list with the indexes we should remove
+    -------
+     - `correspondingList` [list] -> The list with the indexes we should remove
     The removalist, that gives the fingerprint
     """
 
@@ -94,13 +100,16 @@ def find_finger_print_match_short_common(index, struct, fingerPrint):
 def search_for_case_simple(fingerPrintToFind, sysString):
     """
     A Function to search the ASE object for a simple finger fingerprint, to find the first occurence
+    
     Input:
-    fingerPrintToFind [list] -> The simple fingerprint we want find
-    sysString [Str] -> String of the trajectory file we want to find the fingerprint in
+    ------
+     - `fingerPrintToFind` [list] -> The simple fingerprint we want find
+     - `sysString` [Str] -> String of the trajectory file we want to find the fingerprint in
 
     Output:
-    atomIndex [Int] -> Index of the atom we found with the fingerPrint
-    firstFoundRemovalList [list] -> The list of the atom indexes we want to remove to gain the fingerprint we sought
+    -------
+     - `atomIndex` [Int] -> Index of the atom we found with the fingerPrint
+     - `firstFoundRemovalList` [list] -> The list of the atom indexes we want to remove to gain the fingerprint we sought
 
     """
     system = read(sysString)
@@ -125,13 +134,16 @@ def search_for_case_simple(fingerPrintToFind, sysString):
 def search_for_case_short_common(fingerPrintToFind, sysString):
     """
     A Function to search the ASE object for a short common finger fingerprint, to find the first occurence
+    
     Input:
-    fingerPrintToFind [list] -> The short common fingerprint we want find
-    sysString [Str] -> String of the trajectory file we want to find the fingerprint in
+    ------
+     - `fingerPrintToFind` [list] -> The short common fingerprint we want find
+     - `sysString` [Str] -> String of the trajectory file we want to find the fingerprint in
 
     Output:
-    atomIndex [Int] -> Index of the atom we found with the fingerPrint
-    firstFoundRemovalList [list] -> The list of the atom indexes we want to remove to gain the fingerprint we sought
+    -------
+     - `atomIndex` [Int] -> Index of the atom we found with the fingerPrint
+     - `firstFoundRemovalList` [list] -> The list of the atom indexes we want to remove to gain the fingerprint we sought
 
     """
     system = read(sysString)
@@ -155,12 +167,15 @@ def search_for_case_short_common(fingerPrintToFind, sysString):
 def get_all_requests_simple(searchList, sysString):
     """
     A function to get all the requested fingerprint in the (simple finger) format, and give out a list of indexes with removalists, that contains that.
+    
     Input:
-    searchList [list] -> A list of the fingerprints that we want to find
-    sysString [Str] -> String of the trajectory file we want to find the fingerprint in
+    ------
+     - `searchList` [list] -> A list of the fingerprints that we want to find
+     - `sysString` [Str] -> String of the trajectory file we want to find the fingerprint in
 
-    OutPut:
-    elementList [list] -> A list with the elements of type [index, removList], which can be unpacked to so one can quickly find the fingerprints.
+    Output:
+    -------
+     - `elementList` [list] -> A list with the elements of type [index, removList], which can be unpacked to so one can quickly find the fingerprints.
     """
 
     elementList = []
