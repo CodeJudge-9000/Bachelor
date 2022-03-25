@@ -557,11 +557,21 @@ class KMC:
 
         return a
     
+    def get_p_cutoff(self, atomSymb):
+        p = self.get_b_cutoff(atomSymb)**2
+        return p
+
     def get_b_cutoff(self, atomSymb):
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
-        E_min = self.TDlib["Td"].min() * 1.05
-        #print(f"E_min: {E_min}")
+        TD_min = self.TDlib["Td"].min() * 1.05
+        E_max = self.get_energy_cutoff()
+
+        # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
+        if TD_min > E_max:
+            E = E_max
+        else:
+            E = TD_min
 
         # Now get the mass of the atomic nucleus of the corresponding atom
         # The following should (for maximum compatibility) by some library but for now it's just some if-else statements
@@ -569,7 +579,7 @@ class KMC:
             m_n = self.m_S
         elif atomSymb == "Mo":
             m_n = self.m_Mo
-        #print(f"m_n: {m_n}")
+        
 
         # Get the relativistic mass of our electrons, as well as their velocity
         m_r = self.get_reduced_mass(atomSymb)
@@ -579,7 +589,7 @@ class KMC:
         a = self.a(atomSymb)
 
         # Calculate the cutoff value for b
-        b_cutoff = (1/a) * m.sqrt((2*m_r*v_0)**2 / (E_min*1.602176621*10**(-19)*2*m_n*1.660540200*10**(-27)) - 1)
+        b_cutoff = (1/a) * m.sqrt((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n*1.660540200*10**(-27)) - 1)
 
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
