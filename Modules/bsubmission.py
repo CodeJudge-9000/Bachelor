@@ -67,8 +67,8 @@ class bsubmissions:
         #BSUB -N                                                                                                             
         ### -- Specify the output and error file. %J is the job-id -- 
         ### -- -o and -e mean append, -oo and -eo mean overwrite -- 
-        #BSUB -o {outputPath}Output_%J.out 
-        #BSUB -e {errorPath}Error_%J.err 
+        #BSUB -o {outputPath}{self.jobName}_%J.out 
+        #BSUB -e {errorPath}{self.jobName}_%J.err 
 
 
         # here follow the commands you want to execute
