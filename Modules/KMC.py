@@ -80,9 +80,12 @@ class KMC:
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
 
         # Get the fingerprint for the atom
+        # First in the bottom layer
         fingerPrint = self.get_fingerPrint(2, a1, a2)
         if fingerPrint == None:
-            fingerPrint = self.get_fingerPrint(0, a1, a2)
+
+            # Then if there is no atom in the bottom layer, check if there is one in the middle layer
+            fingerPrint = self.get_fingerPrint(1, a1, a2)
             if fingerPrint == None:
                 return 1
 
