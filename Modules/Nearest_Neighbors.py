@@ -1,3 +1,4 @@
+from array import array
 import numpy as np
 from math import sqrt
 from ase import Atoms
@@ -126,9 +127,10 @@ def NNs_Cylinder(system, ind, shape = "wide", atom_type = "*Insert Symbol Here*"
     return n_neighbors, positions, distList
 
 
-def id_array(NN_cyl_output):
+def id_array(NN_cyl_output) -> array:
     """
     This function is a helper function to pack out the output of the NN_cylinder and return it in a simple list type
+    it takes a NN_cyl_output and cleans the output
     """
     idArray = []
     for i in range(0,NN_cyl_output[0]):
@@ -139,6 +141,15 @@ def id_array(NN_cyl_output):
 def get_oposite_indeces_S(sys, ind):
     """
     A function to get the circle of neigbohrs on the other side of the sample
+    Parameters:
+    -----------
+    sys[ASE] -> the ASE system under consideration
+    ind[int] -> the index that we consider
+
+    Returns:
+    --------
+    cylNeigbohrsIndeces[list] -> an array of the indeces that have all the neighbohrs on the opposite side.
+
     """
 
     # Recieving the opposite neigbbohrs index
@@ -153,7 +164,9 @@ def get_oposite_indeces_S(sys, ind):
 
 
 def get_removed_indeces(sys, theIndex):
-
+    """
+    
+    """
     allData = NNs_Sphere(system = sys, ind = theIndex, atom_type = "Mo")
     allDataReduced = allData[2]
 
