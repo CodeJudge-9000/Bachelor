@@ -29,7 +29,7 @@ class KMC:
         self.m_S = 32.06 * 1.660540200*10**(-27) # Sulfur mass in kg
         self.m_Mo = 95.95 * 1.660540200*10**(-27) # Molybdenum mass in kg
         self.speed_of_light_si = 2.998*10**8 # 'c' in m/s
-        self.coulomb_k_si = 2.307077515*10^(-28) # The coulomb constant times e^2, given in SI units (kg*m^3)/(s^2)
+        self.coulomb_k_si = 2.307077515*10**(-28) # The coulomb constant times e^2, given in SI units (kg*m^3)/(s^2)
 
         # Calculate some of the constant values of the system
         self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
