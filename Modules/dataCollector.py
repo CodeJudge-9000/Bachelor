@@ -1,3 +1,4 @@
+from trace import Trace
 import pandas as pd
 import os
 from os import listdir
@@ -206,8 +207,21 @@ def finger_print_search(df, fingerPrint = []) -> pd.DataFrame:
 
 
 # Similar system, similar fingerprint  ## SORTING SO WE ONLY See the 6x6 results
-def remove_small_system(df2):
+def remove_small_system(df2) -> pd.DataFrame:
+    """ remove_small_system - takes out dataframe and sort out all the data which involves 5x5 struct because they are unreliable
+
+    Parameters:
+    -----------
+     - `df2` [pd.DataFrame]: The dataframe we want to sort in
+
+    Returns:
+    --------
+     - `df3` [pd.Dataframe]: The outsorted dataframe
+    """
+
     df3 = df2[df2['startsystemname'] == 'eq_struct_6x6.traj']
+
+    # Refreshing indexing
     try:
         df3 = df3.drop(['level_0'], axis = 1)
     except:
@@ -216,46 +230,79 @@ def remove_small_system(df2):
     return df3
 
 
-def get_trajectories_from_table(df):
-    # LAD OS EXTRAHERER VORES TING FRA TABELLEN
+def get_trajectories_from_table(df, trajectoryFolder = "./trajec") -> list(Trajectory):
+    """ get_trajectories_from_table - takes a dataframe and goes into the subfolder ./trajec and extract the trajectories
+
+    Parameters:
+    -----------
+     - `df` [pd.Dataframe]:
+     - `trajectoryFolder` [str]: the subfolder where the trajectory is placed
+
+    Returns:
+    --------
+     - `Trajs` [list(Trajectory)]: A list with alle the trajectories, so we can have easy acces to things we want to look up
+    """
+    # go into the trajectoryfolder and extract all the filename with their trajectories
+    os.chdir(trajectoryFolder)
     Trajs = []
     for g in range(0,len(df)):
         filename = df.loc[g].trajFile
+        # if the filename from the csv file is od from the trajectory filename, we remove _ add a .traj
         if(filename[-6] == "_"):
             filename = filename[:-6] + ".traj"
-        os.chdir("./trajec")
+        
         T = Trajectory(filename)
         Trajs.append(T)
-        os.chdir("..")
+    #Go back so we do not have to deal with that
+    os.chdir("..")
     
     return Trajs
 
 
-def sort_out_id(df, index):
+def sort_out_id(df, index) -> pd.DataFrame:
+    """ sort_out_id - Just a regular sorter, where we look at the original id and sort out and also refreshes the table
+     - `df` [dataframe]: dataframe we want to sort in
+     - `index` [int]: the originale index of the atom we want to sort out
+    """
+
     viewTable = df[df['original_id'] == index].sort_values('removedList', ascending=False)
     viewTable = viewTable.drop(['level_0'], axis = 1)
     viewTable = viewTable.reset_index()
     return viewTable
 
-def nn_search(df, fingerPrint = []):
-    ## Kigger i denne section på fingerprints som er lignene
+def nn_search(df, neigbohrsCategory = [])  -> pd.DataFrame:
+    """ nn_search - takes a dataframe and neigbohrsCategorizaiton to sort out for example so we only get ['S'] or ['S','D']    
+    """
+    # Here we just finds the neigbohrs which match the category we are interested in
     ins = []
     for i in range(0,len(df)):
-        ins.append( df['neigbohrs'][i] == fingerPrint)
-
+        ins.append( df['neigbohrs'][i] == neigbohrsCategory)
     df2 = df[ins]
+
+    # if dataframe is not clean in indexing we clean it
     try:
         df2 = df2.drop(['level_0'], axis = 1)
     except:
         pass
     df2 = df2.reset_index() 
+
     return df2
 
-def get_same_siders(df):
+def get_same_siders(df)  -> pd.DataFrame:
+    """ get_same_siders - takes a dataframe and looks so we get out instances from the table where ['S'] and ['S', 'S'] and ['S', 'S', 'S'] instances
+
+    Input and Output:
+    -----------------
+     - `df` [pd.Dataframe]: the table we want to sort in and the table where we have sorted.
+    """
+
+    # Get 3 nn_searces and conjugate them
     df1 =  nn_search(df, ['S'])
     df2 =  nn_search(df, ['S','S']) 
     df3 =  nn_search(df, ['S','S','S'])
     dff = pd.concat([df1, df2, df3])
+
+    # Clean the indexing of the new dataframe
     try:
         dff = dff.drop(['level_0'], axis = 1)
     except:
