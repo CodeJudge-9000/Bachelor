@@ -565,7 +565,7 @@ class KMC:
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
         TD_min = self.TDlib["Td"].min() * 1.05
-        E_max = self.get_energy_cutoff()
+        E_max = self.get_energy_cutoff("S")
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
