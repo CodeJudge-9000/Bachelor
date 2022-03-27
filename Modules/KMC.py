@@ -593,7 +593,7 @@ class KMC:
 
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
-        print(b_cutoff)
+        #print(b_cutoff)
 
         return b_cutoff
 
