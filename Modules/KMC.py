@@ -482,7 +482,7 @@ class KMC:
     def get_transferred_energy(self, b, atomSymb):
         """Calculates and returns the transferred energy in eV, given the b-value in Å"""
         # First calculate the momentum
-        p_trans = (2*self.get_reduced_mass() * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
+        p_trans = (2*self.get_reduced_mass(atomSymb) * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
 
         # Then find other required parameters
         if atomSymb == "S":
@@ -566,7 +566,7 @@ class KMC:
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
         TD_min = self.TDlib["Td"].min() * 1.05
-        E_max = self.get_energy_cutoff()
+        E_max = self.get_energy_cutoff(atomSymb)
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
@@ -595,7 +595,7 @@ class KMC:
 
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
-        print(b_cutoff)
+        #print(b_cutoff)
 
         return b_cutoff
 

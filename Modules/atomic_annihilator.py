@@ -20,7 +20,7 @@ localcalc = GPAW(mode='lcao',
             )
 
 
-def remove_atoms(system, atomIndex = [], atomRemoveIndex = [], relax = True, overwriteCalc = True):
+def remove_atoms(system, atomIndex = [], atomRemoveIndex = [], relax = True, overwriteCalc = True, doLogs = False, logName = 'log'):
     """
     Function to remove a list of atoms, or single atom. If relax = True as per default, the system will relax using its calculator after the atoms have been removed.
     
@@ -101,9 +101,12 @@ def remove_atoms(system, atomIndex = [], atomRemoveIndex = [], relax = True, ove
                 atomIndex[l] -= 1
     
     # Relax the system, assuming it already have a calculator
-    if relax == True:
+    if relax == True and doLogs == False:
         opt = QuasiNewton(system)
         opt.run()
+    elif relax == True and doLogs == True:
+        opt = QuasiNewton(system, logfile=logName + '.log', trajectory= logName + '.traj')
+        opt.run()    
     
     return atomIndex
 
