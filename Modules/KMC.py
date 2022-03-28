@@ -2,6 +2,7 @@
 # Initialization
 from ase import Atoms
 from ase.io.trajectory import TrajectoryWriter
+import warnings
 import numpy as np
 import math as m
 from random import uniform
@@ -570,6 +571,7 @@ class KMC:
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
             E = E_max
+            warnings.warn(f"The electron energy is too low to damage the structure - choose a higher energy!")
         else:
             E = TD_min
 
