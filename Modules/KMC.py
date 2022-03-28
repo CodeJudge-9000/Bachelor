@@ -627,13 +627,13 @@ class KMC:
 
     def get_fingerPrint(self, layer, a1, a2):
         """Calculates and returns the fingerprint of the S atom on the given layer of the S grid, with the coordinates (layer, a1, a2)"""
-        # First check if the layer is valid, and if there is actually an atom at the given coordinates
+        ### First check if the layer is valid, and if there is actually an atom at the given coordinates
         if layer not in [0, 1, 2]:
             raise Exception(f"The layer {layer} is not a valid layer. Choose either 0, 1 or 2.")
         if self.grid_S[layer][a1][a2] == False:
             return None
 
-        # Get the opposite layer
+        ### Get the opposite layer
         if layer == 0:
             otherLayer = 2
         elif layer == 1:
@@ -641,9 +641,25 @@ class KMC:
         elif layer == 2:
             otherLayer = 0
 
-        # Get the amount of NN S atoms there are in the same layer
+        ### Get the amount of NN S atoms there are in the same layer
+        # First get which atoms should actually be looked into
+        S_toReview = []
+        if a1 != self.squareSize - 1:
+            S_toReview.append((a1+1, a2))
+            if a2 != 0:
+                S_toReview.append((a1+1, a2-1))
+        if a2 != self.squareSize - 1:
+            S_toReview.append((a1, a2+1))
+            if a1  != 0:
+                S_toReview.append((a1-1, a2+1))
+        if a1 != 0:
+            S_toReview.append((a1-1, a2))
+        if a2 != 0:
+            S_toReview.append((a1, a2-1))
+        
         nS_NNs = 0
-        for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+        #for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+        for e in S_toReview:
             nS_NNs += self.grid_S[layer][e[0],e[1]]
 
         # If we are in the middle layer (1) then we will need to count in the two other layers (using the same method as above)
