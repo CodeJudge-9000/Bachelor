@@ -65,13 +65,15 @@ class KMC:
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
-    def run(self, runTime):
+    def run(self, iter):
         self.current_sim_time = 0
+        self.iter = 0
         
-        while self.current_sim_time < runTime:
+        while self.iter < iter:
             self.simulate_electron()
             self.time_step()
             self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, 1],dtype=object)])))
+            self.iter += 1
         
         return
     
