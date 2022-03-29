@@ -66,14 +66,14 @@ class KMC:
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
-    def run(self, iterN, feedBack = False):
+    def run(self, iterN, feedBack = False, sample = True):
         self.current_sim_time = 0
         iterations = 0
         
         missedElectrons = 0
         
         while iterations < iterN:
-            if self.simulate_electron() == 1:
+            if self.simulate_electron(sample) == 1:
                 missedElectrons += 1
             self.time_step()
             self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
@@ -86,7 +86,7 @@ class KMC:
         
         return
     
-    def simulate_electron(self): # Fixed this thing
+    def simulate_electron(self, sample = True): # Fixed this thing
         # Choose which electron to interact with
         sideLen = len(self.grid_S[-1])
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
@@ -116,7 +116,7 @@ class KMC:
             E_T = self.energy_cutoff_S
         
         # Now check whether the transferred energy is higher than the TD value for this atom
-        TD = self.get_TD(fingerPrint)
+        TD = self.get_TD(fingerPrint, sample)
         
         if TD == None:
             # Return 1 if there is no corresponding TD value
@@ -459,18 +459,20 @@ class KMC:
 
         return fingerPrint
     
-    def get_TD(self, finger):
+    def get_TD(self, finger, sample = True):
         """
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
         # Run through the pandas dataframe, and check if there are any corresponding value
         if len(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]) == 0:
-            # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
+            # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return None
             if finger not in self.missingTDs:
                 self.missingTDs.append(finger)
             return None
         
-        # If there are at least one corresponding TD value, take the average of all the values and return the value
+        # If there are at least one corresponding TD value, either take the average of all the values and return the value, or sample one of the values and return it
+        elif sample == True:
+            self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]["Td"].sample()
         else:
             return self.TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
     
