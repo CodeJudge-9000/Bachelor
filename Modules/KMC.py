@@ -389,72 +389,80 @@ class KMC:
         elif layer == 2:
             otherLayer = 0
 
-        ### Get the amount of NN S atoms there are in the same layer
+        ### Determine the amount of atoms in the same layer
         # First get which atoms should actually be looked into
-        S_toReview = []
+        S_coords = []
         if a1 != self.squareSize - 1:
-            S_toReview.append((a1+1, a2))
+            S_coords.append((a1+1, a2))
             if a2 != 0:
-                S_toReview.append((a1+1, a2-1))
+                S_coords.append((a1+1, a2-1))
         if a2 != self.squareSize - 1:
-            S_toReview.append((a1, a2+1))
+            S_coords.append((a1, a2+1))
             if a1  != 0:
-                S_toReview.append((a1-1, a2+1))
+                S_coords.append((a1-1, a2+1))
         if a1 != 0:
-            S_toReview.append((a1-1, a2))
+            S_coords.append((a1-1, a2))
         if a2 != 0:
-            S_toReview.append((a1, a2-1))
+            S_coords.append((a1, a2-1))
         
         nS_NNs = 0
-        #for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
-        for e in S_toReview:
+        for e in S_coords:
             nS_NNs += self.grid_S[layer][e[0],e[1]]
 
         # If we are in the middle layer (1) then we will need to count in the two other layers (using the same method as above)
         if layer == 1:
-            for e in S_toReview:
+            for e in S_coords:
                 nS_NNs += self.grid_S[0][e[0],e[1]]
                 nS_NNs += self.grid_S[2][e[0],e[1]]
 
         # Otherwise, we need to look at the atom in the opposite layer, at the same coordinates
         if layer == 0 or layer == 2:
+            # TODO
             nS_NNs += self.grid_S[otherLayer][a1][a2]
 
-        # Now determine the amount of Mo neighbors (and save the coordinates in a list)
-        # Given the coordinates of a S atom, the Mo neighbor would be at:
-        #   (a1 - 1, a2 - 1), (a1 - 1, a2), (a1, a2 - 1)
-        toReview = [(a1 - 1, a2 - 1, 0)] # a1 and a2 will never be 0 at the same time for our square molecule, and the corner at max coords is no issue
-        if a1 != 0 and a2 != len(self.grid_Mo):
-            toReview.append((a1 - 1, a2, 1)) # The second would be to the left of the first one
-        if a2 != 0 and a1 != len(self.grid_Mo):
-            toReview.append((a1, a2 - 1, 2)) # The third would be downwards from the first one
-        
-        # Now check how many Mo atoms are at the positions, and how many common neighbors there are
+
+        ### Determine the amount of Mo neighbors, and their common neighbors with out S atom of interest
+        # For the top and bottom layers
+        # NOTE: INTERACTIONS WITH EDGE MIDDLE-LAYER ATOMS HAVE NOT BEEN CONSIDERED YET
         nMo = 0
         nS_list = []
-        #print("toReview: ",toReview)
-        for e in toReview:
-            nS = 0
-            if self.grid_Mo[e[0],e[1]]:
-                nMo += 1
-                
-                # For the middle layer
-                if layer == 1:
-                    raise NotImplementedError("Middle-layer atoms have yet to be implemented.")
-                
-                # For the top and bottom layer
-                else:
-                    nS += self.grid_S[layer][e[0]+1][e[1]]
-                    nS += self.grid_S[layer][e[0]][e[1]+1]
-                    nS += self.grid_S[otherLayer][e[0]+1][e[1]+1] # This is the same position as our atom, but in the opposite layer
-            
-            nS_list.append(nS)
-        nS_list.sort(reverse = True)
-        
-        while len(nS_list) < 4:
-            nS_list.append(0) # The fingerprint allows for up to 4 NN Mo atoms, but in our case there will at most be 3, so this is a quick fix
+        if layer == 0 or layer == 2:
+            if a1 != 0 and a2 != self.squareSize-1 and self.grid_Mo[a1-1, a2]:
+                nMo += self.grid_Mo[a1-1, a2]
+                nS = 0
+                nS += self.grid_S[otherLayer][a1,a2]
+                nS += self.grid_S[layer][a1,a2+1]
+                nS += self.grid_S[layer][a1-1,a2+1]
+                nS_list.append(nS)
 
-        # Now create the actual fingerprint
+            if a1 != 0 and a2 != 0 and self.grid_Mo[a1-1, a2-1]:
+                nMo += self.grid_Mo[a1-1, a2-1]
+                nS = 0
+                nS += self.grid_S[otherLayer][a1,a2]
+                nS += self.grid_S[layer][a1,a2-1]
+                nS += self.grid_S[layer][a1-1,a2]
+                nS_list.append(nS)
+                
+            if a1 != self.squareSize-1 and a2 != 0 and self.grid_Mo[a1, a2-1]:
+                nMo += self.grid_Mo[a1, a2-1]
+                nS = 0
+                nS += self.grid_S[otherLayer][a1,a2]
+                nS += self.grid_S[layer][a1+1,a2]
+                nS += self.grid_S[layer][a1+1,a2-1]
+                nS_list.append(nS)
+        
+        # For the middle layer
+        # NOTE: TODO
+        # NOTE: INTERACTIONS WITH TOP-LAYER ATOMS HAVE NOT BEEN CONSIDERED YET
+        elif layer == 1:
+            raise NotImplementedError("Middle-layer atoms have yet to be implemented.")
+        else:
+            raise Exception(f"The layer {layer} is NOT a valid layer. Please select from the layers 0, 1 and 2 of the sulfur grid.")
+
+        ### Create the fingerprint
+        nS_list.sort(reverse = True)
+        while len(nS_list) < 4:
+            nS_list.append(0)
         fingerPrint = [nMo] + [nS_NNs] + nS_list
 
         return fingerPrint
