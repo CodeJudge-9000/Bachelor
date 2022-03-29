@@ -472,7 +472,7 @@ class KMC:
         
         # If there are at least one corresponding TD value, either take the average of all the values and return the value, or sample one of the values and return it
         elif sample == True:
-            self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]["Td"].sample()
+            float(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]["Td"].sample())
         else:
             return self.TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
     
