@@ -2,6 +2,7 @@
 # Initialization
 from ase import Atoms
 from ase.io.trajectory import TrajectoryWriter
+import warnings
 import numpy as np
 import math as m
 from random import uniform
@@ -38,6 +39,7 @@ class KMC:
         self.energy_cutoff_S = self.get_energy_cutoff("S") # Calculate the energy cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
         self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
+        self.m_r_eS = self.get_reduced_mass("S")
 
         # Create the initial (and empty) missing fingerprints list
         self.missingTDs = [] # Add the missing fingerprints to this list
@@ -64,13 +66,23 @@ class KMC:
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
-    def run(self, runTime):
+    def run(self, iterN, feedBack = False):
         self.current_sim_time = 0
+        iterations = 0
         
-        while self.current_sim_time < runTime:
-            self.simulate_electron()
+        missedElectrons = 0
+        
+        while iterations < iterN:
+            if self.simulate_electron() == 1:
+                missedElectrons += 1
             self.time_step()
             self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, 1],dtype=object)])))
+            iterations += 1
+        
+        if feedBack == True:
+            print(f"Number of electrons simulated: {iterations}")
+            print(f"Number of missed electrons: {missedElectrons}")
+            print(f"Number of atoms knocked out of structure: {iterations - missedElectrons}")
         
         return
     
@@ -90,20 +102,20 @@ class KMC:
                 return 1
 
         # Figure out the interaction distance (b-value) of the electron and atom
-        b = m.sqrt(uniform(0, self.b_cutoff_S**2))
+        b = m.sqrt(uniform(0, self.b_cutoff_S**2)) # Maybe change this to the following?
+        #b = m.sqrt(uniform(0, 1))
+        #if b > self.b_cutoff_S:
+            #return 1
         
         # Figure out how much energy is transferred
         E_T = self.get_transferred_energy(b, "S")
 
-        #print(f"E_T: {E_T}")
-        #print(f"self.energy_cutoff_S: {self.energy_cutoff_S}")
         if E_T > self.energy_cutoff_S:
             E_T = self.energy_cutoff_S
         
         # Now check whether the transferred energy is higher than the TD value for this atom
         TD = self.get_TD(fingerPrint)
-
-        #print(f"TD: {TD}")
+        
         if TD == None:
             # Return 1 if there is no corresponding TD value
             return 1
@@ -501,8 +513,6 @@ class KMC:
 
         # Determine the rate constant
         rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb)**2 * numberS # 1/s
-        #print("b_cutoff: ",self.get_b_cutoff(atomSymb))
-        #print("rate_constant: ", rate_constant)
 
         return rate_constant
 
@@ -524,7 +534,7 @@ class KMC:
         return m_r
     
     def get_reduced_mass(self, atomSymb):
-        """Calculates and returns the reduced mass of the system"""
+        """Calculates and returns the reduced mass of the electron"""
         if atomSymb == "S":
             m_n = self.m_S
         elif atomSymb == "Mo":
@@ -533,8 +543,8 @@ class KMC:
         reduced_mass = self.m_e * m_n / (self.m_e + m_n)
         return reduced_mass
     
-    def get_scattering_cross_section(self):
-        """Calculates and returns the current scattering cross-section for the bottom layer of the S-grid"""
+    def get_displacement_cross_section(self):
+        """Calculates and returns the current displacement cross-section for the bottom layer of the S-grid"""
         curS = np.sum(self.grid_S[-1])
         scatSection = (self.S_init - curS) / (self.S_init * self.dose * self.total_sim_time)
 
@@ -547,10 +557,10 @@ class KMC:
 
         if atomSymb == "S":
             m_n = self.m_S
-            Q = 8
+            Q = 16
         elif atomSymb == "Mo":
             m_n = self.m_Mo
-            Q = 21
+            Q = 42
 
         # Now calculate a
         a = (v_0**2 * self.m_e) / (self.coulomb_k_si * (1) * Q * (self.m_e/m_n + 1)**3)
@@ -569,7 +579,7 @@ class KMC:
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
-            E = E_max
+            raise Exception(f"The electron energy is too low to damage the structure - choose a higher energy!")
         else:
             E = TD_min
 
@@ -589,11 +599,10 @@ class KMC:
         a = self.a(atomSymb)
 
         # Calculate the cutoff value for b
-        b_cutoff = (1/a) * m.sqrt((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n*1.660540200*10**(-27)) - 1)
-
+        b_cutoff = (1/a) * m.sqrt((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n) - 1)
+        
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
-        #print(b_cutoff)
 
         return b_cutoff
 
@@ -623,13 +632,13 @@ class KMC:
 
     def get_fingerPrint(self, layer, a1, a2):
         """Calculates and returns the fingerprint of the S atom on the given layer of the S grid, with the coordinates (layer, a1, a2)"""
-        # First check if the layer is valid, and if there is actually an atom at the given coordinates
+        ### First check if the layer is valid, and if there is actually an atom at the given coordinates
         if layer not in [0, 1, 2]:
             raise Exception(f"The layer {layer} is not a valid layer. Choose either 0, 1 or 2.")
         if self.grid_S[layer][a1][a2] == False:
             return None
 
-        # Get the opposite layer
+        ### Get the opposite layer
         if layer == 0:
             otherLayer = 2
         elif layer == 1:
@@ -637,14 +646,30 @@ class KMC:
         elif layer == 2:
             otherLayer = 0
 
-        # Get the amount of NN S atoms there are in the same layer
+        ### Get the amount of NN S atoms there are in the same layer
+        # First get which atoms should actually be looked into
+        S_toReview = []
+        if a1 != self.squareSize - 1:
+            S_toReview.append((a1+1, a2))
+            if a2 != 0:
+                S_toReview.append((a1+1, a2-1))
+        if a2 != self.squareSize - 1:
+            S_toReview.append((a1, a2+1))
+            if a1  != 0:
+                S_toReview.append((a1-1, a2+1))
+        if a1 != 0:
+            S_toReview.append((a1-1, a2))
+        if a2 != 0:
+            S_toReview.append((a1, a2-1))
+        
         nS_NNs = 0
-        for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+        #for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+        for e in S_toReview:
             nS_NNs += self.grid_S[layer][e[0],e[1]]
 
         # If we are in the middle layer (1) then we will need to count in the two other layers (using the same method as above)
         if layer == 1:
-            for e in [(a1+1, a2), (a1+1, a2-1), (a1, a2-1), (a1, a2+1), (a1-1, a2+1), (a1-1, a2)]:
+            for e in S_toReview:
                 nS_NNs += self.grid_S[0][e[0],e[1]]
                 nS_NNs += self.grid_S[2][e[0],e[1]]
 
@@ -695,10 +720,7 @@ class KMC:
         """
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
-        # First get the fingerprint for the corresponding indices
-        #finger = self.get_fingerPrint(a1, a2)
-
-        # Now run through the pandas dataframe, and check if there are any corresponding value
+        # Run through the pandas dataframe, and check if there are any corresponding value
         if len(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]) == 0:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return True
             if finger not in self.missingTDs:
