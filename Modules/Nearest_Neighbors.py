@@ -227,7 +227,7 @@ def make_list_of_lists(indexList) -> array[array]:
 
 
 
-def get_all_combs_3(system, index) -> array[array]:
+def get_all_combs_3(system, index, degenerate = False):
     """ get_all_combs_3 - A function which get all possibilitets of 3 of the nearest neigbohrs made with sphere_indexes function
     and uniques them such that no identical job exists
 
@@ -251,10 +251,11 @@ def get_all_combs_3(system, index) -> array[array]:
                     listen = [i,j,k]
                     listen.sort()
                     listOfLists3.append(listen)
-    listOfLists3 = make_unique(listOfLists3)
+    if(degenerate == False):
+        listOfLists3 = make_unique(listOfLists3)
     return listOfLists3
 
-def get_all_combs_2(system, index) -> array[array]:
+def get_all_combs_2(system, index, degenerate = False):
     """ get_all_combs_2 - A function which get all possibilitets of 2 of the nearest neigbohrs made with sphere_indexes function
     and uniques them such that no identical job exists
 
@@ -277,10 +278,11 @@ def get_all_combs_2(system, index) -> array[array]:
                 listen = [i,j]
                 listen.sort()
                 listOfLists2.append(listen)
-    listOfLists2 = make_unique(listOfLists2)
+    if(degenerate == False):
+        listOfLists2 = make_unique(listOfLists2)
     return listOfLists2
                 
-def get_all_combs_1(system, index) -> array[array]:
+def get_all_combs_1(system, index, degenerate = False): 
     """ get_all_combs_1 - A function which get all possibilitets of 1 of the nearest neigbohrs made with sphere_indexes function
     and uniques them such that no identical job exists
 
@@ -301,7 +303,8 @@ def get_all_combs_1(system, index) -> array[array]:
         listen = [i]
         listen.sort()
         listOfLists1.append(listen)
-    listOfLists1 = make_unique(listOfLists1)
+    if(degenerate == False):
+        listOfLists1 = make_unique(listOfLists1)
     return listOfLists1
 
 def make_unique(listOfLists):
@@ -318,7 +321,7 @@ def make_unique(listOfLists):
             uniqueList.append(j)
     return uniqueList
 
-def get_all_combs_tot(system, index):
+def get_all_combs_tot(system, index, degenerate = False):
     """ get_all_combs_tot - takes a system and the index of the atom we consider and makes a List containing a list of
     all the atoms we can remove of the combinations of 1, 2, 3 removals
 
@@ -333,9 +336,9 @@ def get_all_combs_tot(system, index):
     """
 
     # collecting lists and combine them
-    list1 = get_all_combs_1(system, index)
-    list2 = get_all_combs_2(system, index)
-    list3 = get_all_combs_3(system, index)
+    list1 = get_all_combs_1(system, index, degenerate)
+    list2 = get_all_combs_2(system, index, degenerate)
+    list3 = get_all_combs_3(system, index, degenerate)
     listTot = list1 + list2 + list3
     return listTot
     

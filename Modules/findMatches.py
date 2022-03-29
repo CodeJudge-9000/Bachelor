@@ -70,15 +70,15 @@ def find_finger_print_match_short_common(index, struct, fingerPrint):
     # Getting the system, and all possible indexes to remove       
     system = struct.copy()
 
-    """ old functionality
-    allNNIndexes = get_removed_indeces(sys = system, theIndex = index)
-
+    
     # Using the make_list_of_lists function to go from index list to a list of listst to remove and appending with the case where nothing got removed.
-    RemovalLists = make_list_of_lists(allNNIndexes)
-    RemovalLists.append([])
-    """
-    # New functionality
-    RemovalLists = get_all_combs_tot(system, index)
+    #### Old functionality
+    ####allNNIndexes = get_removed_indeces(sys = system, theIndex = index)
+    ####RemovalLists = make_list_of_lists(allNNIndexes)
+    ####RemovalLists.append([])
+    
+    #### New functionality
+    RemovalLists = get_all_combs_tot(system, index, True) # True for degenerate is also searched within
     RemovalLists.append([])
 
     # Removing all the atoms in the removal list, to get their fingerprint and add them to a list
