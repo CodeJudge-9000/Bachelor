@@ -170,8 +170,8 @@ def ShortCommonFinger(system, index):
         nMo += 1
     
     # Getting rid of degenerate situations
-    first = fingerPrint[0:1]
-    rest = fingerPrint[1:5]
+    first = fingerPrint[0:2]
+    rest = fingerPrint[2:6]
     rest.sort(reverse=True)
     fingerPrint = first + rest
     

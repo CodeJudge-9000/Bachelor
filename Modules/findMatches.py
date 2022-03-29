@@ -69,10 +69,16 @@ def find_finger_print_match_short_common(index, struct, fingerPrint):
 
     # Getting the system, and all possible indexes to remove       
     system = struct.copy()
+
+    """ old functionality
     allNNIndexes = get_removed_indeces(sys = system, theIndex = index)
 
     # Using the make_list_of_lists function to go from index list to a list of listst to remove and appending with the case where nothing got removed.
     RemovalLists = make_list_of_lists(allNNIndexes)
+    RemovalLists.append([])
+    """
+    # New functionality
+    RemovalLists = get_all_combs_tot(system, index)
     RemovalLists.append([])
 
     # Removing all the atoms in the removal list, to get their fingerprint and add them to a list
@@ -131,7 +137,7 @@ def search_for_case_simple(fingerPrintToFind, sysString):
     return atomIndex, firstFoundRemovalList
 
 
-def search_for_case_short_common(fingerPrintToFind, sysString):
+def search_for_case_short_common(fingerPrintToFind, sysString, startFrom = 0):
     """
     A Function to search the ASE object for a short common finger fingerprint, to find the first occurence
     
@@ -139,6 +145,7 @@ def search_for_case_short_common(fingerPrintToFind, sysString):
     ------
      - `fingerPrintToFind` [list] -> The short common fingerprint we want find
      - `sysString` [Str] -> String of the trajectory file we want to find the fingerprint in
+     - `startFromt` [int] -> the atom we want to start from
 
     Output:
     -------
@@ -150,7 +157,7 @@ def search_for_case_short_common(fingerPrintToFind, sysString):
 
     # Making a loop that inserts the list and tries to use the function in all indexes, on the system if we get an error because we did not find it, we will \
     # instead try on the next index in the structure until we hit something is in aggreement with our list or we have run out of indeces
-    atomIndex = 0
+    atomIndex = startFrom
     while True:
         if(atomIndex > len(system) + 1 ):
             raise UserWarning("You have done something wrong!")
@@ -162,6 +169,31 @@ def search_for_case_short_common(fingerPrintToFind, sysString):
         except:
             atomIndex += 1
     return atomIndex, firstFoundList
+
+def extensive_search_short_common(fingerPrintToFind, sysString, numberOfCases):
+    """ extensive_search_short_common - Is used to find the amount of cases we want in our fingerprint
+     
+     Inputs:
+     -------
+      - `fingerPrintToFind` [list] -> the list of the short common finger we want to search for
+      - `sysString` [str] -> The string of the system we investigate
+      - `numberOfCases` [int] -> The number of different rem lists we want to achieve a fingerprint
+     
+     Output:
+     -------
+      - `casesFound` [list] -> A list with the tuples that the search_for_case_short_common returns.
+          in format of [ (int, remlist), (int, remlist)......] and so on
+    
+    """
+    casesFound = []
+    index = 0 
+    
+    # We look for a case, and when we find it, we start from the next atom in the sequence and find it
+    for case in range(numberOfCases):
+        index, remList = search_for_case_short_common(fingerPrintToFind, sysString, index)
+        casesFound.append((index, remList))
+        index = index + 1
+    return casesFound
 
 
 def get_all_requests_simple(searchList, sysString):
