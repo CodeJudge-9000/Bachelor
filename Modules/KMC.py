@@ -73,7 +73,7 @@ class KMC:
         missedElectrons = 0
         
         while iterations < iterN:
-            if self.simulate_electron(sample) == 1:
+            if self.simulate_electron(sample) == False:
                 missedElectrons += 1
             self.time_step()
             self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
@@ -87,27 +87,55 @@ class KMC:
         return
     
     def simulate_electron(self, sample = True): # Fixed this thing
-        # Choose which electron to interact with
+        # Choose a point in the S grid independently of the layer
         sideLen = len(self.grid_S[-1])
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
 
-        # Get the fingerprint for the atom
-        # First in the bottom layer
-        fingerPrint = self.get_fingerPrint(2, a1, a2)
-        layer = 2
-        if fingerPrint == None:
-
-            # Then if there is no atom in the bottom layer, check if there is one in the middle layer
-            fingerPrint = self.get_fingerPrint(1, a1, a2)
-            layer = 1
-            if fingerPrint == None:
-                return 1
-
+        # Determine of there is an atom in any of the layers, starting from the top layer
+        layer = 0
+        fingerPrint = None
+        while (layer < 3):
+            fingerPrint = self.get_fingerPrint(layer, a1, a2)
+            
+            # The interaction for the top layer
+            if fingerPrint != None and layer == 0:
+            
+                # In the case there is no atom on the other side of the structure
+                # TILFØJ NOGET DER SØRGER FOR AT VI BENYTTER DE RIGTIGE TD VÆRDIER. INDTIL VIDERE SÆTTER JEG DENNE HER TIL ALTID AT VÆRE FALSE TIL VI HAR STYR PÅ DET
+                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, sample) == True and False == True: # SIDSTE CONDITION ER SÅ DET HER IKKE TRIGGER FØR VI HAR FÅET STYR PÅ TDERNE, POTENTIELT SKAL DER BENYTTES ET ANDET LIBRARY
+                    # Remove atom in top-layer & add it to the bottom layer
+                    self.grid_S[layer][a1,a2] = False
+                    self.grid_S[2][a1,a2] = True
+            
+                    # Update the grid of removed atoms
+                    self.grid_Removed[layer][a1,a2] = True
+                    self.grid_Removed[2][a1,a2] = False
+            
+                    # Then update the total rate constant for the system
+                    self.rate_constant_S = self.get_rate_constant("S")
+            
+                    return True
+                
+                # Then in the case there is (or the transferred energy was too low) then pass (assume the electron does NOT interact with the first atom and just flies through unhindered, though in reality it may be turned around)
+                else:
+                    pass
+            
+            # Interaction for the middle-layer and bottom layer
+            if fingerPrint != None and layer != 0:
+                if self.higherThanTD(fingerPrint, sample) == True:
+                    self.removeAtom(layer, a1, a2)
+                    return True
+                else:
+                    return False
+            # Update layer variable
+            layer += 1
+        
+        print("Exited loop without triggering any condition")
+        return False
+    
+    def higherThanTD(self, fingerPrint, sample):
         # Figure out the interaction distance (b-value) of the electron and atom
-        b = m.sqrt(uniform(0, self.b_cutoff_S**2)) # Maybe change this to the following?
-        #b = m.sqrt(uniform(0, 1))
-        #if b > self.b_cutoff_S:
-            #return 1
+        b = m.sqrt(uniform(0, self.b_cutoff_S**2))
         
         # Figure out how much energy is transferred
         E_T = self.get_transferred_energy(b, "S")
@@ -118,28 +146,24 @@ class KMC:
         # Now check whether the transferred energy is higher than the TD value for this atom
         TD = self.get_TD(fingerPrint, sample)
         
-        if TD == None:
-            # Return 1 if there is no corresponding TD value
-            return 1
-        
-        if E_T >= TD:
-            # Remove atom if the transferred energy exceeds the TD value
-            self.grid_S[layer][a1,a2] = False
-
-            # Also update the grid of removed atoms
-            self.grid_Removed[layer][a1,a2] = True
-
-            # Then update the total rate constant for the system
-            self.rate_constant_S = self.get_rate_constant("S")
-
-            # Then return 0
-            return 0
+        if TD == None or E_T < TD:
+            # Return False if there is no corresponding TD value or the transferred energy is lower than the TD value
+            return False
         else:
-            # Otherwise, return 1
-            return 1
+            # Return True if there is a corresponding TD value, and if the transferred energy if high enough
+            return True
 
-        return 1 # We shouldn't ever reach this point
-    
+    def removeAtom(self, layer, a1, a2):
+        # Remove atom in layer
+        self.grid_S[layer][a1,a2] = False
+
+        # Also update the grid of removed atoms
+        self.grid_Removed[layer][a1,a2] = True
+
+        # Then update the total rate constant for the system
+        self.rate_constant_S = self.get_rate_constant("S")
+        return
+
     def reset(self):
         """Creates and updates the current grids with undamaged ones using the size of the current grids. Also resets the total simulation time."""
         self.create_system(self.squareSize, self.structType)
