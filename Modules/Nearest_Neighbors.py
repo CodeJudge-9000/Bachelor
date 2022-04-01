@@ -116,7 +116,7 @@ def NNs_Cylinder(system, ind, shape = "wide", atom_type = "*Insert Symbol Here*"
     
     # Now find the nearest neighbors, defined as every atom with a distance of less than 115% the lowest value
     for i in reversed(range(len(distList))):
-        if distList[i]["distance"] > lowestDist*1.15:
+        if distList[i]["distance"] > lowestDist*1.10:
             distList = np.delete(distList, i)
     
     # Create list with the relative distance (relative to aoi) of all neighboring atoms
