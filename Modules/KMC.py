@@ -483,59 +483,46 @@ class KMC:
         if a2 != 0:
             S_coords.append((a1, a2-1))
         
+        # Irregardless of which layer we are in, we need to count the neighbors as we would usually (yes even for middle-layer atoms)
         nS_NNs = 0
         for e in S_coords:
             nS_NNs += self.grid_S[layer][e[0],e[1]]
 
-        # If we are in the middle layer (1) then we will need to count in the two other layers (using the same method as above)
-        if layer == 1:
-            for e in S_coords:
-                nS_NNs += self.grid_S[0][e[0],e[1]]
-                nS_NNs += self.grid_S[2][e[0],e[1]]
-
-        # Otherwise, we need to look at the atom in the opposite layer, at the same coordinates
+        # For layer 0 and 2 we need to look at the atom in the opposite layer, at the same coordinates
         if layer == 0 or layer == 2:
-            # TODO
             nS_NNs += self.grid_S[otherLayer][a1][a2]
 
 
         ### Determine the amount of Mo neighbors, and their common neighbors with out S atom of interest
-        # For the top and bottom layers
-        # NOTE: INTERACTIONS WITH EDGE MIDDLE-LAYER ATOMS HAVE NOT BEEN CONSIDERED YET
+        # For the top, bottom as well as middle-layer
+        # NOTE: INTERACTIONS WITH EDGE MIDDLE-LAYER ATOMS TURNED OUT TO BE RATHER SIMPLE (EXCEPT IN EDGE-CASES. FUCK EDGE CASES. THERE'S A 50% CHANCE OF THEM NOT COUNTING THE ATOMS IN THE SAME LAYER IN SOME STRUCTURES.)
         nMo = 0
         nS_list = []
-        if layer == 0 or layer == 2:
-            if a1 != 0 and a2 != self.squareSize-1 and self.grid_Mo[a1-1, a2]:
-                nMo += self.grid_Mo[a1-1, a2]
-                nS = 0
-                nS += self.grid_S[otherLayer][a1,a2]
-                nS += self.grid_S[layer][a1,a2+1]
-                nS += self.grid_S[layer][a1-1,a2+1]
-                nS_list.append(nS)
+        if a1 != 0 and a2 != self.squareSize-1 and self.grid_Mo[a1-1, a2]:
+            nMo += self.grid_Mo[a1-1, a2]
+            nS = 0
+            nS += self.grid_S[otherLayer][a1,a2]
+            nS += self.grid_S[layer][a1,a2+1]
+            nS += self.grid_S[layer][a1-1,a2+1]
+            nS_list.append(nS)
 
-            if a1 != 0 and a2 != 0 and self.grid_Mo[a1-1, a2-1]:
-                nMo += self.grid_Mo[a1-1, a2-1]
-                nS = 0
+        if a1 != 0 and a2 != 0 and self.grid_Mo[a1-1, a2-1]:
+            nMo += self.grid_Mo[a1-1, a2-1]
+            nS = 0
+            if layer == 0 or layer == 2:
                 nS += self.grid_S[otherLayer][a1,a2]
-                nS += self.grid_S[layer][a1,a2-1]
-                nS += self.grid_S[layer][a1-1,a2]
-                nS_list.append(nS)
-                
-            if a1 != self.squareSize-1 and a2 != 0 and self.grid_Mo[a1, a2-1]:
-                nMo += self.grid_Mo[a1, a2-1]
-                nS = 0
+            nS += self.grid_S[layer][a1,a2-1]
+            nS += self.grid_S[layer][a1-1,a2]
+            nS_list.append(nS)
+            
+        if a1 != self.squareSize-1 and a2 != 0 and self.grid_Mo[a1, a2-1]:
+            nMo += self.grid_Mo[a1, a2-1]
+            nS = 0
+            if layer == 0 or layer == 2:
                 nS += self.grid_S[otherLayer][a1,a2]
-                nS += self.grid_S[layer][a1+1,a2]
-                nS += self.grid_S[layer][a1+1,a2-1]
-                nS_list.append(nS)
-        
-        # For the middle layer
-        # NOTE: TODO
-        # NOTE: INTERACTIONS WITH TOP-LAYER ATOMS HAVE NOT BEEN CONSIDERED YET
-        elif layer == 1:
-            raise NotImplementedError("Middle-layer atoms have yet to be implemented.")
-        else:
-            raise Exception(f"The layer {layer} is NOT a valid layer. Please select from the layers 0, 1 and 2 of the sulfur grid.")
+            nS += self.grid_S[layer][a1+1,a2]
+            nS += self.grid_S[layer][a1+1,a2-1]
+            nS_list.append(nS)
 
         ### Create the fingerprint
         nS_list.sort(reverse = True)
