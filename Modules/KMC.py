@@ -31,14 +31,15 @@ class KMC:
         self.m_Mo = 95.95 * 1.660540200*10**(-27) # Molybdenum mass in kg
         self.speed_of_light_si = 2.998*10**8 # 'c' in m/s
         self.coulomb_k_si = 2.307077515*10**(-28) # The coulomb constant times e^2, given in SI units (kg*m^3)/(s^2)
+        self.k_B_si = 1.380649*10**(-23) # The boltzmann constant given in J/K
 
         # Calculate some of the constant values of the system
         self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
         self.relativistic_electron_mass = self.get_relativistic_electron_mass() # The relativistic electron mass in kg
-        self.electron_velocity = self.get_electron_velocity() # Electron velocity in m/s
-        self.energy_cutoff_S = self.get_energy_cutoff("S") # Calculate the energy cutoff for our atom type (S)
+        self.electron_velocity = self.get_relativistic_electron_velocity() # Electron velocity in m/s
+        self.energy_cutoff_mean_S = self.get_energy_cutoff("S",0) # Calculate the energy cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
-        self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
+        self.b_cutoff_mean_S = self.get_b_cutoff("S",0) # Calculate the b-cutoff for our atom type (S)
         self.m_r_eS = self.get_reduced_mass("S")
 
         # Create the initial (and empty) missing fingerprints list
@@ -52,10 +53,10 @@ class KMC:
 
         # Remember to update the dependent functions
         self.electron_velocity = self.get_electron_velocity()
-        self.energy_cutoff_S = self.get_energy_cutoff("S")
+        self.energy_cutoff_mean_S = self.get_energy_cutoff("S",0)
         self.relativistic_electron_mass = self.get_relativistic_electron_mass()
         self.a_S = self.a("S")
-        self.b_cutoff_S = self.get_b_cutoff("S")
+        self.b_cutoff_mean_S = self.get_b_cutoff("S",0)
         return
     
     def set_electron_dose(self, electron_dose):
@@ -130,18 +131,22 @@ class KMC:
             # Update layer variable
             layer += 1
         
-        print("Exited loop without triggering any condition")
         return False
     
     def higherThanTD(self, fingerPrint, sample):
         # Figure out the interaction distance (b-value) of the electron and atom
-        b = m.sqrt(uniform(0, self.b_cutoff_S**2))
-        
-        # Figure out how much energy is transferred
-        E_T = self.get_transferred_energy(b, "S")
+        b = m.sqrt(uniform(0, self.b_cutoff_mean_S**2))
 
-        if E_T > self.energy_cutoff_S:
-            E_T = self.energy_cutoff_S
+        # Get a velocity for the atom
+        velocity = self.get_velocity_20C("S")
+        
+        # Figure out how much energy is transferred & the cutoff
+        E_T = self.get_transferred_energy(b, "S", velocity)
+        E_cutoff = self.get_energy_cutoff("S", velocity)
+
+
+        if E_T > E_cutoff:
+            E_T = E_cutoff
         
         # Now check whether the transferred energy is higher than the TD value for this atom
         TD = self.get_TD(fingerPrint, sample)
@@ -250,26 +255,63 @@ class KMC:
 
         # Then update all the other required stuff
         self.S_init = np.sum(self.grid_S[0])
-        self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
-        self.energy_cutoff_S = self.get_energy_cutoff("S") # Calculate the energy cutoff for our atom type (S)
+        self.rate_constant_S = self.get_rate_constant("S",0) # Calculate the rate constant for the system
+        self.energy_cutoff_mean_S = self.get_energy_cutoff("S",0) # Calculate the energy cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
-        self.b_cutoff_S = self.get_b_cutoff("S") # Calculate the b-cutoff for our atom type (S)
+        self.b_cutoff_mean_S = self.get_b_cutoff("S",0) # Calculate the b-cutoff for our atom type (S)
 
         return
 
-    def get_transferred_energy(self, b, atomSymb):
-        """Calculates and returns the transferred energy in eV, given the b-value in Å"""
-        # First calculate the momentum
-        p_trans = (2*self.get_reduced_mass(atomSymb) * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
-
-        # Then find other required parameters
+    def get_velocity_20C(self, atomSymb):
+        """Given an atomic symbol, returns a velocity from a normal distribution"""
+        # First get the mass (in kg)
         if atomSymb == "S":
             m_n = self.m_S
         elif atomSymb == "Mo":
             m_n = self.m_Mo
 
-        # Then use the momentum to calculate the energy
-        E_T = 6.241509125*10**18*p_trans**2/(2*m_n)
+        # Define the width at 20C in m/s
+        width = m.sqrt(124.1640143*self.k_B_si/m_n)
+
+        # Using a normal distribution, pull a velocity
+        velocity = np.random.normal(0,width)
+
+        return velocity
+
+    def get_transferred_energy(self, b, atomSymb, velocity):
+        """Calculates and returns the transferred energy in eV, given the b-value in Å and velocity in m/s"""
+        # Convert the b-value from Å to m, and electron energy from eV to J
+        b *= 10**(-10)
+        E_e = self.electronKin * 1.602176621*10**(-19)
+        c = self.speed_of_light_si
+
+        if atomSymb == "S":
+            m_n = self.m_S
+            Q = 16
+        elif atomSymb == "Mo":
+            m_n = self.m_Mo
+            Q = 42
+
+        # Use the b-value to calculate the reflection angle
+        theta = 2*m.atan((self.coulomb_k_si*Q) / (self.m_e*b*self.electron_velocity**2))
+
+        # Use the reflection angle as well as velocity to calculate the transferred energy
+        nominator = 2*(E_e*(2*(c**2)*self.m_e + E_e) + m.sqrt(E_e*(2*(c**2)*self.m_e + E_e))*m_n*velocity*c)*(1 - m.cos(theta)) + (m_n*velocity*c)**2
+        denominator = 2*m_n*self.speed_of_light_si**2
+        E_T = nominator/denominator
+
+        # Then convert to eV
+        E_T *= 6.241509125*10**18
+
+        ##### OLD #####
+        ## First calculate the momentum
+        #p_trans = (2*self.get_reduced_mass(atomSymb) * self.electron_velocity) / m.sqrt((b*10**(-10))**2 * self.a_S**2 + 1)
+        ##### OLD #####
+
+        ##### OLD #####
+        ## Then use the momentum to calculate the energy
+        #E_T = 6.241509125*10**18*p_trans**2/(2*m_n)
+        ##### OLD #####
 
         return E_T
 
@@ -279,7 +321,7 @@ class KMC:
         numberS = np.sum(self.grid_S[-1])
 
         # Determine the rate constant
-        rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb)**2 * numberS # 1/s
+        rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb, 0)**2 * numberS # 1/s
 
         return rate_constant
 
@@ -338,11 +380,11 @@ class KMC:
         p = self.get_b_cutoff(atomSymb)**2
         return p
 
-    def get_b_cutoff(self, atomSymb):
+    def get_b_cutoff(self, atomSymb, velocity):
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
-        TD_min = self.TDlib["Td"].min() * 1.05
-        E_max = self.get_energy_cutoff(atomSymb)
+        TD_min = self.TDlib["Td"].min()
+        E_max = self.get_energy_cutoff(atomSymb, velocity)
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
@@ -351,18 +393,18 @@ class KMC:
             E = TD_min
 
         # Now get the mass of the atomic nucleus of the corresponding atom
-        # The following should (for maximum compatibility) by some library but for now it's just some if-else statements
+        # The following should (for maximum compatibility) be some library but for now it's just some if-else statements
         if atomSymb == "S":
             m_n = self.m_S
         elif atomSymb == "Mo":
             m_n = self.m_Mo
         
 
-        # Get the relativistic mass of our electrons, as well as their velocity
+        # Get the reduced mass of our electrons, as well as their velocity
         m_r = self.get_reduced_mass(atomSymb)
         v_0 = self.get_relativistic_electron_velocity()
 
-        # Get 'a'
+        # Get 'a' (also known as kappa)
         a = self.a(atomSymb)
 
         # Calculate the cutoff value for b
@@ -373,14 +415,26 @@ class KMC:
 
         return b_cutoff
 
-    def get_energy_cutoff(self, atomSymb):
-        """Calculates and returns the energy cutoff (maximum) in eV"""
+    def get_energy_cutoff(self, atomSymb, velocity):
+        """Calculates and returns the energy cutoff (maximum) in eV, given an atomic type and its velocity"""
         if atomSymb == "S":
             m_n = self.m_S
         elif atomSymb == "Mo":
             m_n = self.m_Mo
 
-        E_max = (2* self.electronKin * (self.electronKin + 2*5.1098895*10**5)) / (6.241509125*10**18 * m_n * self.speed_of_light_si**2)
+        # Convert eV to J
+        E_e = self.electronKin * 1.602176621*10**(-19)
+
+        # Calculate the electron rest energy
+        E_0 = self.m_e * self.speed_of_light_si**2
+
+        # Calculate the maximum energy transfer
+        nominator = (2*m.sqrt(E_e*(E_e + 2*E_0)) + m_n*velocity*self.speed_of_light_si)**2
+        denominator = 2*m_n*self.speed_of_light_si**2
+        E_max = nominator/denominator
+
+        #Then convert it to eV
+        E_max *= 6.241509125*10**18
 
         return E_max
 
