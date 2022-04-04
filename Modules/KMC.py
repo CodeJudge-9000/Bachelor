@@ -23,7 +23,7 @@ class KMC:
         self.TDlib = TDlib # TD energies in eV
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV) <- Units are *important*
         self.gridStack = np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time], dtype=object)]) # np array used to store the two grids, as well as the 
-        self.S_init = np.sum(self.grid_S[-1])
+        self.S_init = np.sum(self.grid_S)
 
         # Define some constants
         self.m_e = 9.1093837015*10**(-31) # Electron mass in kg
@@ -254,7 +254,7 @@ class KMC:
         self.total_sim_time = self.gridStack[-1][2]
 
         # Then update all the other required stuff
-        self.S_init = np.sum(self.grid_S[0])
+        self.S_init = np.sum(self.grid_S)
         self.rate_constant_S = self.get_rate_constant("S",0) # Calculate the rate constant for the system
         self.energy_cutoff_mean_S = self.get_energy_cutoff("S",0) # Calculate the energy cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
@@ -356,6 +356,9 @@ class KMC:
         """Calculates and returns the current displacement cross-section for the bottom layer of the S-grid"""
         curS = np.sum(self.grid_S[-1])
         scatSection = (self.S_init - curS) / (self.S_init * self.dose * self.total_sim_time)
+        
+        # Convert from Å^2 to barn
+        scatSection *= 10**8
 
         return scatSection
 
@@ -545,7 +548,7 @@ class KMC:
         
         # If there are at least one corresponding TD value, either take the average of all the values and return the value, or sample one of the values and return it
         elif sample == True:
-            float(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]["Td"].sample())
+            return float(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]["Td"].sample())
         else:
             return self.TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
     
