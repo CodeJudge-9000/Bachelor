@@ -77,11 +77,16 @@ class KMC:
         if runToLimit == True:
             sumAtoms = self.S_init
             while sumAtoms > self.S_init*0.90:
-                if self.simulate_electron(sample) == False:
+                outcome = self.simulate_electron(sample)
+                if  outcome == False:
                     missedElectrons += 1
                 else:
-                    sumAtoms -= 1
-                self.time_step()
+                    self.time_step()
+                    if outcome == True:
+                        sumAtoms -= 1
+                    else:
+                        missedElectrons += 1
+                    
                 self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
                 iterations += 1
 
@@ -89,7 +94,8 @@ class KMC:
             while iterations < iterN:
                 if self.simulate_electron(sample) == False:
                     missedElectrons += 1
-                self.time_step()
+                else:
+                    self.time_step()
                 self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
                 iterations += 1
         
@@ -101,6 +107,7 @@ class KMC:
         return
     
     def simulate_electron(self, sample = True): # Fixed this thing
+        """Returns True if an atom was removed, and False otherwise. If an atom was interacted with, but did not get removed, this function returns the string "interaction". """
         # Choose a point in the S grid independently of the layer
         sideLen = len(self.grid_S[-1])
         a1, a2 = randint(0, sideLen-1), randint(0, sideLen-1)
@@ -140,10 +147,15 @@ class KMC:
                     self.removeAtom(layer, a1, a2)
                     return True
                 else:
-                    return False
+                    pass
             # Update layer variable
             layer += 1
         
+        # Check whether there was an atom in any layer, but that we missed it
+        for l in [0,1,2]:
+            if self.grid_S[l][0,1,2] == True:
+                return "interaction"
+
         return False
     
     def higherThanTD(self, fingerPrint, sample):
