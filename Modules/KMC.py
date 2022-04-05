@@ -153,7 +153,7 @@ class KMC:
         
         # Check whether there was an atom in any layer, but that we missed it
         for l in [0,1,2]:
-            if self.grid_S[l][0,1,2] == True:
+            if self.grid_S[l][a1,a2] == True:
                 return "interaction"
 
         return False
