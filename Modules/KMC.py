@@ -34,12 +34,12 @@ class KMC:
         self.k_B_si = 1.380649*10**(-23) # The boltzmann constant given in J/K
 
         # Calculate some of the constant values of the system
+        self.b_cutoff_mean_S = self.get_b_cutoff("S",0) # Calculate the b-cutoff for our atom type (S)
         self.rate_constant_S = self.get_rate_constant("S") # Calculate the rate constant for the system
         self.relativistic_electron_mass = self.get_relativistic_electron_mass() # The relativistic electron mass in kg
         self.electron_velocity = self.get_relativistic_electron_velocity() # Electron velocity in m/s
         self.energy_cutoff_mean_S = self.get_energy_cutoff("S",0) # Calculate the energy cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
-        self.b_cutoff_mean_S = self.get_b_cutoff("S",0) # Calculate the b-cutoff for our atom type (S)
         self.m_r_eS = self.get_reduced_mass("S")
 
         # Create the initial (and empty) missing fingerprints list
@@ -57,6 +57,7 @@ class KMC:
         self.relativistic_electron_mass = self.get_relativistic_electron_mass()
         self.a_S = self.a("S")
         self.b_cutoff_mean_S = self.get_b_cutoff("S",0)
+        self.rate_constant_S = self.get_rate_constant("S")
         return
     
     def set_electron_dose(self, electron_dose):
@@ -267,10 +268,10 @@ class KMC:
 
         # Then update all the other required stuff
         self.S_init = np.sum(self.grid_S)
-        self.rate_constant_S = self.get_rate_constant("S",0) # Calculate the rate constant for the system
         self.energy_cutoff_mean_S = self.get_energy_cutoff("S",0) # Calculate the energy cutoff for our atom type (S)
         self.a_S = self.a("S") # Calculate 'a'
         self.b_cutoff_mean_S = self.get_b_cutoff("S",0) # Calculate the b-cutoff for our atom type (S)
+        self.rate_constant_S = self.get_rate_constant("S",0) # Calculate the rate constant for the system
 
         return
 
@@ -333,7 +334,7 @@ class KMC:
         numberS = np.sum(self.grid_S)
 
         # Determine the rate constant
-        if atomSymb == S:
+        if atomSymb == "S":
             rate_constant = self.dose * m.pi * self.b_cutoff_mean_S**2 * numberS
         else:
             rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb, 0)**2 * numberS # 1/s
@@ -519,7 +520,8 @@ class KMC:
         if a1 != 0 and a2 != self.squareSize-1 and self.grid_Mo[a1-1, a2]:
             nMo += self.grid_Mo[a1-1, a2]
             nS = 0
-            nS += self.grid_S[otherLayer][a1,a2]
+            if layer == 0 or layer == 2:
+                nS += self.grid_S[otherLayer][a1,a2]
             nS += self.grid_S[layer][a1,a2+1]
             nS += self.grid_S[layer][a1-1,a2+1]
             nS_list.append(nS)
