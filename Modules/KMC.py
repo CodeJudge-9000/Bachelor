@@ -67,18 +67,30 @@ class KMC:
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
-    def run(self, iterN, feedBack = False, sample = True):
+    def run(self, iterN, feedBack = False, sample = True, runToLimit = False):
         self.current_sim_time = 0
         iterations = 0
         
         missedElectrons = 0
         
-        while iterations < iterN:
-            if self.simulate_electron(sample) == False:
-                missedElectrons += 1
-            self.time_step()
-            self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
-            iterations += 1
+        if runToLimit == True:
+            sumAtoms = self.S_init
+            while sumAtoms > self.S_init*0.90:
+                if self.simulate_electron(sample) == False:
+                    missedElectrons += 1
+                else:
+                    sumAtoms -= 1
+                self.time_step()
+                self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
+                iterations += 1
+
+        else:
+            while iterations < iterN:
+                if self.simulate_electron(sample) == False:
+                    missedElectrons += 1
+                self.time_step()
+                self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
+                iterations += 1
         
         if feedBack == True:
             print(f"Number of electrons simulated: {iterations}")
@@ -318,10 +330,13 @@ class KMC:
     def get_rate_constant(self, atomSymb):
         """Calculates and returns the rate constant of the whole system for ONE type of atom in 1/s"""
         # Determine how many atoms can get hit (In this case the amount of atoms in the bottom layer)
-        numberS = np.sum(self.grid_S[-1])
+        numberS = np.sum(self.grid_S)
 
         # Determine the rate constant
-        rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb, 0)**2 * numberS # 1/s
+        if atomSymb == S:
+            rate_constant = self.dose * m.pi * self.b_cutoff_mean_S**2 * numberS
+        else:
+            rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb, 0)**2 * numberS # 1/s
 
         return rate_constant
 
@@ -354,7 +369,7 @@ class KMC:
     
     def get_displacement_cross_section(self):
         """Calculates and returns the current displacement cross-section for the bottom layer of the S-grid"""
-        curS = np.sum(self.grid_S[-1])
+        curS = np.sum(self.grid_S)
         scatSection = (self.S_init - curS) / (self.S_init * self.dose * self.total_sim_time)
         
         # Convert from Å^2 to barn
