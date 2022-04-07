@@ -123,7 +123,7 @@ class KMC:
             
                 # In the case there is no atom on the other side of the structure
                 # TILFØJ NOGET DER SØRGER FOR AT VI BENYTTER DE RIGTIGE TD VÆRDIER. INDTIL VIDERE SÆTTER JEG DENNE HER TIL ALTID AT VÆRE FALSE TIL VI HAR STYR PÅ DET
-                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, sample) == True and False == True: # SIDSTE CONDITION ER SÅ DET HER IKKE TRIGGER FØR VI HAR FÅET STYR PÅ TDERNE, POTENTIELT SKAL DER BENYTTES ET ANDET LIBRARY
+                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, situation = "PT", sample = sample) == True: # SIDSTE CONDITION ER SÅ DET HER IKKE TRIGGER FØR VI HAR FÅET STYR PÅ TDERNE, POTENTIELT SKAL DER BENYTTES ET ANDET LIBRARY
                     # Remove atom in top-layer & add it to the bottom layer
                     self.grid_S[layer][a1,a2] = False
                     self.grid_S[2][a1,a2] = True
@@ -143,7 +143,7 @@ class KMC:
             
             # Interaction for the middle-layer and bottom layer
             if fingerPrint != None and layer != 0:
-                if self.higherThanTD(fingerPrint, sample) == True:
+                if self.higherThanTD(fingerPrint, situation = "PA", sample = sample) == True:
                     self.removeAtom(layer, a1, a2)
                     return True
                 else:
@@ -158,9 +158,9 @@ class KMC:
 
         return False
     
-    def higherThanTD(self, fingerPrint, sample):
+    def higherThanTD(self, fingerPrint, situation, sample):
         # Figure out the interaction distance (b-value) of the electron and atom
-        b = m.sqrt(uniform(0, self.b_cutoff_mean_S**2))
+        b = m.sqrt(uniform(0, self.b_cutoff_mean_S**2)/m.pi)
 
         # Get a velocity for the atom
         velocity = self.get_velocity_20C("S")
@@ -174,7 +174,7 @@ class KMC:
             E_T = E_cutoff
         
         # Now check whether the transferred energy is higher than the TD value for this atom
-        TD = self.get_TD(fingerPrint, sample)
+        TD = self.get_TD(fingerPrint, situation, sample)
         
         if TD == None or E_T < TD:
             # Return False if there is no corresponding TD value or the transferred energy is lower than the TD value
@@ -564,22 +564,25 @@ class KMC:
 
         return fingerPrint
     
-    def get_TD(self, finger, sample = True):
+    def get_TD(self, finger, situation, sample = True):
         """
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
+
+        TDlib = self.TDlib[self.TDlib["situation"] == situation]
+
         # Run through the pandas dataframe, and check if there are any corresponding value
-        if len(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]) == 0:
+        if len(TDlib[TDlib[self.fingerPrint] == str(finger)]) == 0:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return None
-            if finger not in self.missingTDs:
-                self.missingTDs.append(finger)
+            if (finger, situation) not in self.missingTDs:
+                self.missingTDs.append((finger, situation))
             return None
         
         # If there are at least one corresponding TD value, either take the average of all the values and return the value, or sample one of the values and return it
         elif sample == True:
-            return float(self.TDlib[self.TDlib[self.fingerPrint] == str(finger)]["Td"].sample())
+            return float(TDlib[TDlib[self.fingerPrint] == str(finger)]["Td"].sample())
         else:
-            return self.TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
+            return TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
     
     def get_missing_TDs(self):
         """
