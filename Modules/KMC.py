@@ -81,6 +81,7 @@ class KMC:
                 if  outcome == False:
                     missedElectrons += 1
                 else:
+                    self.update_rate_constant_S()
                     self.time_step()
                     if outcome == True:
                         sumAtoms -= 1
@@ -89,12 +90,19 @@ class KMC:
                     
                 self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
                 iterations += 1
+                
+                # Condition to ensure we do not end up in an infinite loop
+                if iterations >= self.S_init * 20:
+                    print(f"Exited loop due to termination condition iterations >= {self.S_init * 20}")
+                    break
 
         else:
             while iterations < iterN:
-                if self.simulate_electron(sample) == False:
+                outcome = self.simulate_electron(sample)
+                if outcome == False or outcome == "interaction":
                     missedElectrons += 1
                 else:
+                    self.update_rate_constant_S()
                     self.time_step()
                 self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
                 iterations += 1
@@ -122,8 +130,7 @@ class KMC:
             if fingerPrint != None and layer == 0:
             
                 # In the case there is no atom on the other side of the structure
-                # TILFØJ NOGET DER SØRGER FOR AT VI BENYTTER DE RIGTIGE TD VÆRDIER. INDTIL VIDERE SÆTTER JEG DENNE HER TIL ALTID AT VÆRE FALSE TIL VI HAR STYR PÅ DET
-                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, situation = "PT", sample = sample) == True: # SIDSTE CONDITION ER SÅ DET HER IKKE TRIGGER FØR VI HAR FÅET STYR PÅ TDERNE, POTENTIELT SKAL DER BENYTTES ET ANDET LIBRARY
+                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, situation = "PT", sample = sample) == True:
                     # Remove atom in top-layer & add it to the bottom layer
                     self.grid_S[layer][a1,a2] = False
                     self.grid_S[2][a1,a2] = True
@@ -134,6 +141,7 @@ class KMC:
             
                     # Then update the total rate constant for the system
                     self.rate_constant_S = self.get_rate_constant("S")
+                    
             
                     return True
                 
@@ -353,6 +361,12 @@ class KMC:
 
         return rate_constant
 
+    def update_rate_constant_S(self):
+        """Updates the variable self.rate_constant_S"""
+        self.rate_constant_S = self.get_rate_constant("S")
+
+        return
+
     def get_relativistic_electron_velocity(self):
         """Calculates and returns the speed of the electrons, considering relativistic effects"""
         v_rela = 2.998*10**8*m.sqrt(1 - 1/(self.electronKin/(5.1098895*10**5) + 1)**2)
@@ -562,7 +576,7 @@ class KMC:
             nS_list.append(0)
         fingerPrint = [nMo] + [nS_NNs] + nS_list
 
-        return fingerPrint
+        return tuple(fingerPrint)
     
     def get_TD(self, finger, situation, sample = True):
         """
@@ -572,7 +586,7 @@ class KMC:
         TDlib = self.TDlib[self.TDlib["situation"] == situation]
 
         # Run through the pandas dataframe, and check if there are any corresponding value
-        if len(TDlib[TDlib[self.fingerPrint] == str(finger)]) == 0:
+        if len(TDlib[TDlib[self.fingerPrint] == finger]) == 0:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return None
             if (finger, situation) not in self.missingTDs:
                 self.missingTDs.append((finger, situation))
@@ -580,9 +594,9 @@ class KMC:
         
         # If there are at least one corresponding TD value, either take the average of all the values and return the value, or sample one of the values and return it
         elif sample == True:
-            return float(TDlib[TDlib[self.fingerPrint] == str(finger)]["Td"].sample())
+            return float(TDlib[TDlib[self.fingerPrint] == finger]["Td"].sample())
         else:
-            return TDlib[self.TDlib[self.fingerPrint] == str(finger)].mean()["Td"]
+            return TDlib[self.TDlib[self.fingerPrint] == finger].mean()["Td"]
     
     def get_missing_TDs(self):
         """
