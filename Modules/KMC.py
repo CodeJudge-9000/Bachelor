@@ -10,11 +10,12 @@ from random import randint
 
 
 class KMC:
-    def __init__(self, gridSize, structureType, TDlib, fingerPrint, kinetic_E, electron_dose):
+    def __init__(self, gridSize, structureType, TDlib, fingerPrint, kinetic_E, electron_dose, overwriteTD = False):
         # First create the system
         self.create_system(gridSize, structureType)
 
         # Define a bunch of internal parameters
+        self.overwriteTD = overwriteTD
         self.squareSize = gridSize
         self.structType = structureType
         self.dose = electron_dose # number of electrons/(Å**2 * s)
@@ -92,8 +93,9 @@ class KMC:
                 iterations += 1
                 
                 # Condition to ensure we do not end up in an infinite loop
-                if iterations >= self.S_init * 20:
-                    print(f"Exited loop due to termination condition iterations >= {self.S_init * 20}")
+                termMult = 4
+                if iterations >= self.S_init * termMult:
+                    print(f"Exited loop due to termination condition iterations >= {self.S_init * termMult}")
                     break
 
         else:
@@ -428,14 +430,16 @@ class KMC:
     def get_b_cutoff(self, atomSymb, velocity):
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
-        TD_min = self.TDlib["Td"].min()
+        if self.overwriteTD != False:
+            TD_min = self.overwriteTD
+        else:
+            TD_min = self.TDlib["Td"].min()
         E_max = self.get_energy_cutoff(atomSymb, velocity)
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
-            raise Exception(f"The electron energy is too low to damage the structure - choose a higher energy!")
-        else:
-            E = TD_min
+            warnings.warn(f"The electron energy is too low to damage the structure - choose a higher energy!")
+        E = TD_min
 
         # Now get the mass of the atomic nucleus of the corresponding atom
         # The following should (for maximum compatibility) be some library but for now it's just some if-else statements
@@ -453,7 +457,7 @@ class KMC:
         a = self.a(atomSymb)
 
         # Calculate the cutoff value for b
-        b_cutoff = (1/a) * m.sqrt((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n) - 1)
+        b_cutoff = (1/a) * m.sqrt(((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
         
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
@@ -583,6 +587,11 @@ class KMC:
         Using two indices, calculate the fingerprint of the atom and return its TD value, using the TD library. If no TD value exists for the given fingerprint, log this (add to the missingTDs list) and return False.
         """
 
+        # Check for overwrite
+        if self.overwriteTD != False:
+            return self.overwriteTD
+        
+        # Define the TD library as local
         TDlib = self.TDlib[self.TDlib["situation"] == situation]
 
         # Run through the pandas dataframe, and check if there are any corresponding value
