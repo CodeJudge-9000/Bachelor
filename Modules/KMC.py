@@ -451,13 +451,15 @@ class KMC:
 
         # Get the reduced mass of our electrons, as well as their velocity
         m_r = self.get_reduced_mass(atomSymb)
+        m_rela = self.get_relativistic_electron_mass()
         v_0 = self.get_relativistic_electron_velocity()
 
         # Get 'a' (also known as kappa)
         a = self.a(atomSymb)
 
         # Calculate the cutoff value for b
-        b_cutoff = (1/a) * m.sqrt(((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
+        b_cutoff = (1/a) * m.sqrt(((2*m_rela*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
+        #b_cutoff = (1/a) * m.sqrt(((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
         
         # Convert it to Å and return it
         b_cutoff = b_cutoff * 10**(10)
