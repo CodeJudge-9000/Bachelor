@@ -93,7 +93,7 @@ class KMC:
                 iterations += 1
                 
                 # Condition to ensure we do not end up in an infinite loop
-                termMult = 2
+                termMult = 0.8
                 if iterations >= self.S_init * termMult:
                     print(f"Exited loop due to termination condition iterations >= {self.S_init * termMult}")
                     break
@@ -412,7 +412,7 @@ class KMC:
     def a(self, atomSymb):
         """Calculates the 'a' parameter, and returns it in 1/m"""
         # First get the variables in order
-        v_0 = self.get_electron_velocity()
+        v_0 = self.get_relativistic_electron_velocity()
 
         if atomSymb == "S":
             m_n = self.m_S
@@ -441,8 +441,8 @@ class KMC:
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
-            warnings.warn(f"The electron energy is too low to damage the structure - choose a higher energy! Using 0.01 Å as b_cutoff!")
-            return 0.01
+            warnings.warn(f"The electron energy is too low to damage the structure - choose a higher energy! Using 0.0005 Å as b_cutoff!")
+            return 0.0005
         E = TD_min
 
         # Now get the mass of the atomic nucleus of the corresponding atom
@@ -464,9 +464,13 @@ class KMC:
         # Calculate the cutoff value for b
         b_cutoff = (1/a) * m.sqrt(((2*m_rela*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
         #b_cutoff = (1/a) * m.sqrt(((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
-        
+
         # Convert it to Å, increase it by 25%, and return it
         b_cutoff = 1.25 * b_cutoff * 10**(10)
+    
+        # Minimum limit
+        if b_cutoff < 0.0005:
+            b_cutoff = 0.0005
 
         return b_cutoff
 
