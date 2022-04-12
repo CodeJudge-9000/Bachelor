@@ -10,7 +10,7 @@ from random import randint
 
 
 class KMC:
-    def __init__(self, gridSize, structureType, TDlib, fingerPrint, kinetic_E, electron_dose, overwriteTD = False):
+    def __init__(self, gridSize, structureType, TDlib, fingerPrint, kinetic_E, electron_dose_rate, overwriteTD = False):
         # First create the system
         self.create_system(gridSize, structureType)
 
@@ -18,7 +18,7 @@ class KMC:
         self.overwriteTD = overwriteTD
         self.squareSize = gridSize
         self.structType = structureType
-        self.dose = electron_dose # number of electrons/(Å**2 * s)
+        self.dose_rate = electron_dose_rate # number of electrons/(Å**2 * s)
         self.total_sim_time = 0 # Some time unit. Figure this one out later
         self.fingerPrint = fingerPrint
         self.TDlib = TDlib # TD energies in eV
@@ -61,15 +61,15 @@ class KMC:
         self.rate_constant_S = self.get_rate_constant("S")
         return
     
-    def set_electron_dose(self, electron_dose):
-        """Updates the electron dose"""
-        self.dose = electron_dose
+    def set_electron_dose_rate(self, electron_dose_rate):
+        """Updates the electron dose rate"""
+        self.dose_rate = electron_dose_rate
 
         # Remember to update the dependent functions
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
-    def run(self, iterN, feedBack = False, sample = True, runToLimit = False):
+    def run(self, iterN, feedBack = False, sample = True, runToLimit = False, useT = True):
         self.current_sim_time = 0
         iterations = 0
         
@@ -78,7 +78,7 @@ class KMC:
         if runToLimit == True:
             sumAtoms = self.S_init
             while sumAtoms > self.S_init*0.90:
-                outcome = self.simulate_electron(sample)
+                outcome = self.simulate_electron(sample, useT)
                 if  outcome == False:
                     missedElectrons += 1
                 else:
@@ -93,7 +93,7 @@ class KMC:
                 iterations += 1
                 
                 # Condition to ensure we do not end up in an infinite loop
-                termMult = 4
+                termMult = 2
                 if iterations >= self.S_init * termMult:
                     print(f"Exited loop due to termination condition iterations >= {self.S_init * termMult}")
                     break
@@ -116,7 +116,7 @@ class KMC:
         
         return
     
-    def simulate_electron(self, sample = True): # Fixed this thing
+    def simulate_electron(self, sample = True, useT = True): # Fixed this thing
         """Returns True if an atom was removed, and False otherwise. If an atom was interacted with, but did not get removed, this function returns the string "interaction". """
         # Choose a point in the S grid independently of the layer
         sideLen = len(self.grid_S[-1])
@@ -132,7 +132,7 @@ class KMC:
             if fingerPrint != None and layer == 0:
             
                 # In the case there is no atom on the other side of the structure
-                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, situation = "PT", sample = sample) == True:
+                if self.grid_S[2][a1,a2] == False and self.higherThanTD(fingerPrint, situation = "PT", sample = sample, useT = useT) == True:
                     # Remove atom in top-layer & add it to the bottom layer
                     self.grid_S[layer][a1,a2] = False
                     self.grid_S[2][a1,a2] = True
@@ -153,7 +153,7 @@ class KMC:
             
             # Interaction for the middle-layer and bottom layer
             if fingerPrint != None and layer != 0:
-                if self.higherThanTD(fingerPrint, situation = "PA", sample = sample) == True:
+                if self.higherThanTD(fingerPrint, situation = "PA", sample = sample, useT = useT) == True:
                     self.removeAtom(layer, a1, a2)
                     return True
                 else:
@@ -168,12 +168,15 @@ class KMC:
 
         return False
     
-    def higherThanTD(self, fingerPrint, situation, sample):
+    def higherThanTD(self, fingerPrint, situation, sample, useT):
         # Figure out the interaction distance (b-value) of the electron and atom
         b = m.sqrt(uniform(0, self.b_cutoff_mean_S**2)/m.pi)
 
         # Get a velocity for the atom
-        velocity = self.get_velocity_20C("S")
+        if useT == True:
+            velocity = self.get_velocity_20C("S")
+        else:
+            velocity = 0
         
         # Figure out how much energy is transferred & the cutoff
         E_T = self.get_transferred_energy(b, "S", velocity)
@@ -357,9 +360,9 @@ class KMC:
 
         # Determine the rate constant
         if atomSymb == "S":
-            rate_constant = self.dose * m.pi * self.b_cutoff_mean_S**2 * numberS
+            rate_constant = self.dose_rate * m.pi * self.b_cutoff_mean_S**2 * numberS
         else:
-            rate_constant = self.dose * m.pi * self.get_b_cutoff(atomSymb, 0)**2 * numberS # 1/s
+            rate_constant = self.dose_rate * m.pi * self.get_b_cutoff(atomSymb, 0)**2 * numberS # 1/s
 
         return rate_constant
 
@@ -399,7 +402,7 @@ class KMC:
     def get_displacement_cross_section(self):
         """Calculates and returns the current displacement cross-section for the bottom layer of the S-grid"""
         curS = np.sum(self.grid_S)
-        scatSection = (self.S_init - curS) / (self.S_init * self.dose * self.total_sim_time)
+        scatSection = (self.S_init - curS) / (self.S_init * self.dose_rate * self.total_sim_time)
         
         # Convert from Å^2 to barn
         scatSection *= 10**8
@@ -438,7 +441,8 @@ class KMC:
 
         # Since we are limited by E_max, check whether this TD_Min is higher than E_Max
         if TD_min > E_max:
-            warnings.warn(f"The electron energy is too low to damage the structure - choose a higher energy!")
+            warnings.warn(f"The electron energy is too low to damage the structure - choose a higher energy! Using 0.01 Å as b_cutoff!")
+            return 0.01
         E = TD_min
 
         # Now get the mass of the atomic nucleus of the corresponding atom
@@ -461,8 +465,8 @@ class KMC:
         b_cutoff = (1/a) * m.sqrt(((2*m_rela*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
         #b_cutoff = (1/a) * m.sqrt(((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
         
-        # Convert it to Å and return it
-        b_cutoff = b_cutoff * 10**(10)
+        # Convert it to Å, increase it by 25%, and return it
+        b_cutoff = 1.25 * b_cutoff * 10**(10)
 
         return b_cutoff
 
@@ -501,6 +505,10 @@ class KMC:
         self.current_sim_time += timePassed
 
         return
+
+    def get_total_dose(self):
+        self.total_dose = self.dose_rate * self.total_sim_time
+        return self.total_dose
 
     def get_fingerPrint(self, layer, a1, a2):
         """Calculates and returns the fingerprint of the S atom on the given layer of the S grid, with the coordinates (layer, a1, a2)"""
