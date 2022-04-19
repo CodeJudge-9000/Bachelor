@@ -23,7 +23,7 @@ class KMC:
         self.fingerPrint = fingerPrint
         self.TDlib = TDlib # TD energies in eV
         self.electronKin = kinetic_E # Kinetic energy of electrons. Same unit as TD values (eV) <- Units are *important*
-        self.gridStack = np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time], dtype=object)]) # np array used to store the two grids, as well as the 
+        self.gridStack = [(self.grid_S.copy(), self.grid_Mo.copy(), self.grid_Removed.copy(), self.total_sim_time, 0)] # list used to store the two grids, as well as the 
         self.S_init = np.sum(self.grid_S)
 
         # Define some constants
@@ -89,7 +89,7 @@ class KMC:
                     else:
                         missedElectrons += 1
                     
-                self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
+                self.gridStack.append((self.grid_S.copy(), self.grid_Mo.copy(), self.grid_Removed.copy(), self.total_sim_time))
                 iterations += 1
                 
                 # Condition to ensure we do not end up in an infinite loop
@@ -106,7 +106,7 @@ class KMC:
                 else:
                     self.update_rate_constant_S()
                     self.time_step()
-                self.gridStack = np.concatenate((self.gridStack, np.array([np.array([self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time],dtype=object)])))
+                self.gridStack.append((self.grid_S.copy(), self.grid_Mo.copy(), self.grid_Removed.copy(), self.total_sim_time, iterations))
                 iterations += 1
         
         if feedBack == True:
@@ -202,15 +202,23 @@ class KMC:
 
         # Also update the grid of removed atoms
         self.grid_Removed[layer][a1,a2] = True
+        
+        # Check if it was a corner atom, and if so remove the atom in the other layer
+        if a1 + a2 == 0 or (a1 == 0 and a2 == self.squareSize-1) or (a2 == 0 and a1 == self.squareSize-1) or a1 + a2 == (self.squareSize-1)*2:
+            # Remember that this only happens in the bottom layer
+            if layer == 2:
+                self.grid_S[0][a1,a2] = False
+                self.grid_Removed[0][a1,a2] = True
 
         # Then update the total rate constant for the system
         self.rate_constant_S = self.get_rate_constant("S")
         return
 
     def reset(self):
-        """Creates and updates the current grids with undamaged ones using the size of the current grids. Also resets the total simulation time."""
+        """Creates and updates the current grids with undamaged ones using the size of the current grids. Also resets the total simulation time and gridStack"""
         self.create_system(self.squareSize, self.structType)
         self.total_sim_time = 0
+        self.gridStack = [(self.grid_S, self.grid_Mo, self.grid_Removed, self.total_sim_time, 0)]
 
         return
 
@@ -374,7 +382,7 @@ class KMC:
 
     def get_relativistic_electron_velocity(self):
         """Calculates and returns the speed of the electrons, considering relativistic effects"""
-        v_rela = 2.998*10**8*m.sqrt(1 - 1/(self.electronKin/(5.1098895*10**5) + 1)**2)
+        v_rela = self.speed_of_light_si*m.sqrt(1 - 1/(self.electronKin/(511024.6653) + 1)**2)
         return v_rela
     
     def get_electron_velocity(self):
@@ -385,8 +393,8 @@ class KMC:
     
     def get_relativistic_electron_mass(self):
         """Calculates the relativistic mass of the electron and returns it in kg"""
-        v = self.get_electron_velocity()
-        m_r = (self.m_e) / (1 - (v/self.speed_of_light_si)**2)
+        v = self.get_relativistic_electron_velocity()
+        m_r = (self.m_e) / m.sqrt(1 - (v/self.speed_of_light_si)**2)
         return m_r
     
     def get_reduced_mass(self, atomSymb):
@@ -399,20 +407,24 @@ class KMC:
         reduced_mass = self.m_e * m_n / (self.m_e + m_n)
         return reduced_mass
     
-    def get_displacement_cross_section(self):
+    def get_displacement_cross_section(self, testMode = False):
         """Calculates and returns the current displacement cross-section for the bottom layer of the S-grid"""
         curS = np.sum(self.grid_S)
         scatSection = (self.S_init - curS) / (self.S_init * self.dose_rate * self.total_sim_time)
         
         # Convert from Å^2 to barn
         scatSection *= 10**8
-
+        
+        if testMode == True:
+            return (self.S_init - curS)/self.S_init
         return scatSection
 
     def a(self, atomSymb):
         """Calculates the 'a' parameter, and returns it in 1/m"""
         # First get the variables in order
         v_0 = self.get_relativistic_electron_velocity()
+        m_e = self.get_relativistic_electron_mass()
+        #m_e = self.m_e
 
         if atomSymb == "S":
             m_n = self.m_S
@@ -422,7 +434,7 @@ class KMC:
             Q = 42
 
         # Now calculate a
-        a = (v_0**2 * self.m_e) / (self.coulomb_k_si * (1) * Q * (self.m_e/m_n + 1)**3)
+        a = (v_0**2 * m_e) / (self.coulomb_k_si * (1) * Q * (m_e/m_n + 1)**3)
 
         return a
     
@@ -606,10 +618,10 @@ class KMC:
             return self.overwriteTD
         
         # Define the TD library as local
-        TDlib = self.TDlib[self.TDlib["situation"] == situation]
+        #TDlib = self.TDlib[self.TDlib["situation"] == situation]
 
         # Run through the pandas dataframe, and check if there are any corresponding value
-        if len(TDlib[TDlib[self.fingerPrint] == finger]) == 0:
+        if len(self.TDlib[self.TDlib["situation"] == situation][self.TDlib[self.TDlib["situation"] == situation][self.fingerPrint] == finger]) == 0:
             # If there are none, add the fingerPrint to missingTDs (if it is not there already) and return None
             if (finger, situation) not in self.missingTDs:
                 self.missingTDs.append((finger, situation))
@@ -617,9 +629,9 @@ class KMC:
         
         # If there are at least one corresponding TD value, either take the average of all the values and return the value, or sample one of the values and return it
         elif sample == True:
-            return float(TDlib[TDlib[self.fingerPrint] == finger]["Td"].sample())
+            return float(self.TDlib[self.TDlib["situation"] == situation][self.TDlib[self.TDlib["situation"] == situation][self.fingerPrint] == finger]["Td"].sample())
         else:
-            return TDlib[self.TDlib[self.fingerPrint] == finger].mean()["Td"]
+            return self.TDlib[self.TDlib["situation"] == situation][self.TDlib[self.fingerPrint] == finger].mean()["Td"]
     
     def get_missing_TDs(self):
         """
