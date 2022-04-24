@@ -71,6 +71,7 @@ class KMC:
 
     def run(self, iterN, feedBack = False, sample = True, runToLimit = False, useT = True):
         self.current_sim_time = 0
+        iteractions = 0
         iterations = 0
         
         missedElectrons = 0
@@ -78,6 +79,7 @@ class KMC:
         if runToLimit == True:
             sumAtoms = self.S_init
             while sumAtoms > self.S_init*0.90:
+                iterations += 1
                 outcome = self.simulate_electron(sample, useT)
                 if  outcome == False:
                     missedElectrons += 1
@@ -90,24 +92,27 @@ class KMC:
                         missedElectrons += 1
                     
                 self.gridStack.append((self.grid_S.copy(), self.grid_Mo.copy(), self.grid_Removed.copy(), self.total_sim_time))
-                iterations += 1
+                iteractions += 1
                 
                 # Condition to ensure we do not end up in an infinite loop
                 termMult = 0.8
-                if iterations >= self.S_init * termMult:
-                    print(f"Exited loop due to termination condition iterations >= {self.S_init * termMult}")
+                if iteractions >= self.S_init * termMult:
+                    print(f"Exited loop due to termination condition interactions >= {self.S_init * termMult}")
+                    print(f"Ran through {iterations} iterations.")
                     break
 
         else:
-            while iterations < iterN:
-                outcome = self.simulate_electron(sample)
-                if outcome == False or outcome == "interaction":
+            while iteractions < iterN:
+                outcome = self.simulate_electron(sample, useT)
+                if outcome == False:
                     missedElectrons += 1
                 else:
+                    if outcome == "interaction":
+                        missedElectrons += 1
                     self.update_rate_constant_S()
                     self.time_step()
-                self.gridStack.append((self.grid_S.copy(), self.grid_Mo.copy(), self.grid_Removed.copy(), self.total_sim_time, iterations))
-                iterations += 1
+                self.gridStack.append((self.grid_S.copy(), self.grid_Mo.copy(), self.grid_Removed.copy(), self.total_sim_time, iteractions))
+                iteractions += 1
         
         if feedBack == True:
             print(f"Number of electrons simulated: {iterations}")
@@ -445,6 +450,8 @@ class KMC:
     def get_b_cutoff(self, atomSymb, velocity):
         """Calculates and returns the cutoff value for b in Å (angstrom)"""
         # Find the lowest TD value, as to find the b cutoff (as E_T ~ 1/b**2)
+        
+        
         if self.overwriteTD != False:
             TD_min = self.overwriteTD
         else:
@@ -478,7 +485,7 @@ class KMC:
         #b_cutoff = (1/a) * m.sqrt(((2*m_r*v_0)**2 / (E*1.602176621*10**(-19)*2*m_n)) - 1)
 
         # Convert it to Å, increase it by 25%, and return it
-        b_cutoff = 1.25 * b_cutoff * 10**(10)
+        b_cutoff = 5 * b_cutoff * 10**(10) #1.25 * b_cutoff * 10**(10)
     
         # Minimum limit
         if b_cutoff < 0.0005:
@@ -523,6 +530,7 @@ class KMC:
         return
 
     def get_total_dose(self):
+        """The total dose is returned in e/Å^2"""
         self.total_dose = self.dose_rate * self.total_sim_time
         return self.total_dose
 
